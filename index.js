@@ -37,6 +37,9 @@ export const logout = () => {
   goToPage(POSTS_PAGE);
 };
 
+/**
+ * Включает страницу приложения
+ */
 export const goToPage = (newPage, data) => {
   if (
     [
@@ -48,7 +51,7 @@ export const goToPage = (newPage, data) => {
     ].includes(newPage)
   ) {
     if (newPage === ADD_POSTS_PAGE) {
-     
+      /* Если пользователь не авторизован, то отправляем его на страницу авторизации перед добавлением поста */
       page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
       return renderApp();
     }
@@ -59,6 +62,7 @@ export const goToPage = (newPage, data) => {
 
       return getPosts({ token: getToken() })
         .then((newPosts) => {
+          console.log("Посты из API:", newPosts); // Для отладки
           page = POSTS_PAGE;
           posts = newPosts;
           renderApp();
@@ -94,7 +98,7 @@ export const goToPage = (newPage, data) => {
   throw new Error("страницы не существует");
 };
 
-
+// Функция для обработки лайков
 export const toggleLike = (postId, isLiked) => {
   const token = getToken();
   if (!token) {
@@ -106,13 +110,13 @@ export const toggleLike = (postId, isLiked) => {
   
   return likePromise({ token, postId })
     .then((responseData) => {
-      
+      // Обновляем конкретный пост в массиве posts
       const postIndex = posts.findIndex(post => post.id === postId);
       if (postIndex !== -1) {
         posts[postIndex] = responseData.post;
       }
       
-  
+      // Также обновляем страницу для отображения изменений
       renderApp();
     })
     .catch((error) => {
