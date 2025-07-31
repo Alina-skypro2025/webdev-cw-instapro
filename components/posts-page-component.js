@@ -96,7 +96,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       ? "./assets/images/like-active.svg" 
       : "./assets/images/like-not-active.svg";
     
-  
+
     const imageSrc = post.imageUrl && post.imageUrl.trim() !== '' 
       ? post.imageUrl 
       : "./assets/images/default-image.jpg";
@@ -145,7 +145,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     element: document.querySelector(".header-container"),
   });
 
- 
+  
   document.querySelectorAll(".post-header").forEach(userEl => {
     userEl.addEventListener("click", () => {
       goToPage(USER_POSTS_PAGE, {
@@ -154,13 +154,19 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
-  
+
   document.querySelectorAll('.like-button').forEach(button => {
     button.addEventListener('click', (event) => {
-      event.stopPropagation(); // Предотвращаем всплытие события
+      event.stopPropagation();
+      
+     
+      button.classList.add('liked');
+      setTimeout(() => {
+        button.classList.remove('liked');
+      }, 300);
+      
       const postId = button.dataset.postId;
       const isLiked = button.dataset.isLiked === 'true';
-      
       
       button.dataset.isLiked = !isLiked;
       
@@ -169,4 +175,13 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       }
     });
   });
+
+
+  const container = document.querySelector('.page-container');
+  if (container) {
+    container.classList.add('page-transition');
+    setTimeout(() => {
+      container.classList.add('active');
+    }, 10);
+  }
 }
