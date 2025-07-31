@@ -38,7 +38,6 @@ export const logout = () => {
   goToPage(POSTS_PAGE);
 };
 
-
 const smoothPageTransition = (callback) => {
   const appEl = document.getElementById("app");
   const container = appEl.querySelector('.page-container');
