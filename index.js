@@ -39,6 +39,30 @@ export const logout = () => {
 };
 
 
+const smoothPageTransition = (callback) => {
+  const appEl = document.getElementById("app");
+  const container = appEl.querySelector('.page-container');
+  
+  if (container) {
+    container.classList.remove('active');
+    setTimeout(() => {
+      callback();
+      setTimeout(() => {
+        const newContainer = appEl.querySelector('.page-container');
+        if (newContainer) {
+          newContainer.classList.add('page-transition');
+          setTimeout(() => {
+            newContainer.classList.add('active');
+          }, 10);
+        }
+      }, 10);
+    }, 300);
+  } else {
+    callback();
+  }
+};
+
+
 export const goToPage = (newPage, data) => {
   if (
     [
@@ -50,7 +74,7 @@ export const goToPage = (newPage, data) => {
     ].includes(newPage)
   ) {
     if (newPage === ADD_POSTS_PAGE) {
- 
+   
       page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
       return renderApp();
     }
@@ -101,7 +125,7 @@ export const goToPage = (newPage, data) => {
 export const toggleLike = (postId, isLiked) => {
   const token = getToken();
   if (!token) {
-    goToPage(AUTH_PAGE);
+    smoothPageTransition(() => goToPage(AUTH_PAGE));
     return Promise.resolve();
   }
 
@@ -115,7 +139,7 @@ export const toggleLike = (postId, isLiked) => {
         posts[postIndex] = responseData.post;
       }
       
-   
+    
       renderApp();
     })
     .catch((error) => {
@@ -140,7 +164,7 @@ const renderApp = () => {
       setUser: (newUser) => {
         user = newUser;
         saveUserToLocalStorage(user);
-        goToPage(POSTS_PAGE);
+        smoothPageTransition(() => goToPage(POSTS_PAGE));
       },
       user,
       goToPage,
@@ -153,11 +177,11 @@ const renderApp = () => {
       onAddPostClick({ description, imageUrl }) {
         const token = getToken();
         if (!token) {
-          goToPage(AUTH_PAGE);
+          smoothPageTransition(() => goToPage(AUTH_PAGE));
           return;
         }
         
-      
+     
         if (!description.trim()) {
           alert("Введите описание поста");
           return;
@@ -168,11 +192,11 @@ const renderApp = () => {
           return;
         }
         
-       
+      
         addPost({ token, description, imageUrl })
           .then(() => {
-       
-            goToPage(POSTS_PAGE);
+          
+            smoothPageTransition(() => goToPage(POSTS_PAGE));
           })
           .catch((error) => {
             console.error("Ошибка при добавлении поста:", error);
