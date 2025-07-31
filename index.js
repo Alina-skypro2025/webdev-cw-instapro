@@ -37,9 +37,6 @@ export const logout = () => {
   goToPage(POSTS_PAGE);
 };
 
-
- 
- 
 export const goToPage = (newPage, data) => {
   if (
     [
@@ -51,7 +48,7 @@ export const goToPage = (newPage, data) => {
     ].includes(newPage)
   ) {
     if (newPage === ADD_POSTS_PAGE) {
-      
+     
       page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
       return renderApp();
     }
@@ -109,16 +106,18 @@ export const toggleLike = (postId, isLiked) => {
   
   return likePromise({ token, postId })
     .then((responseData) => {
-    
+      
       const postIndex = posts.findIndex(post => post.id === postId);
       if (postIndex !== -1) {
         posts[postIndex] = responseData.post;
       }
+      
+  
       renderApp();
     })
     .catch((error) => {
       console.error("Ошибка при работе с лайком:", error);
-      alert("Не удалось выполнить действие");
+      alert("Не удалось выполнить действие: " + error.message);
     });
 };
 
