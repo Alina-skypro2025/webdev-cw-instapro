@@ -1,6 +1,6 @@
 import { USER_POSTS_PAGE } from "../routes.js";
 import { renderHeaderComponent } from "./header-component.js";
-import { formatDate } from "../date-utils.js";
+
 
 export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleLike, isUserPostsPage = false }) {
   
@@ -48,8 +48,8 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
           ${post.description || ''}
         </p>
         <p class="post-date">
-          ${formatDate(post.createdAt)}
-        </p>
+  ${post.createdAt} 
+</p>
       </li>
     `;
   }).join("");
