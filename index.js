@@ -38,6 +38,7 @@ export const logout = () => {
   goToPage(POSTS_PAGE);
 };
 
+
 const smoothPageTransition = (callback) => {
   const appEl = document.getElementById("app");
   const container = appEl.querySelector('.page-container');
@@ -73,7 +74,7 @@ export const goToPage = (newPage, data) => {
     ].includes(newPage)
   ) {
     if (newPage === ADD_POSTS_PAGE) {
-   
+    
       page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
       return renderApp();
     }
@@ -124,7 +125,18 @@ export const goToPage = (newPage, data) => {
 export const toggleLike = (postId, isLiked) => {
   const token = getToken();
   if (!token) {
-    smoothPageTransition(() => goToPage(AUTH_PAGE));
+    
+    const appEl = document.getElementById("app");
+    const container = appEl.querySelector('.page-container');
+    
+    if (container) {
+      container.classList.remove('active');
+      setTimeout(() => {
+        goToPage(AUTH_PAGE);
+      }, 300);
+    } else {
+      goToPage(AUTH_PAGE);
+    }
     return Promise.resolve();
   }
 
@@ -132,20 +144,41 @@ export const toggleLike = (postId, isLiked) => {
   
   return likePromise({ token, postId })
     .then((responseData) => {
-      
+     
       const postIndex = posts.findIndex(post => post.id === postId);
       if (postIndex !== -1) {
         posts[postIndex] = responseData.post;
-      }
+        
       
-    
-      renderApp();
+        updatePostInDOM(postId, responseData.post);
+      }
     })
     .catch((error) => {
       console.error("Ошибка при работе с лайком:", error);
       alert("Не удалось выполнить действие: " + error.message);
     });
 };
+
+
+function updatePostInDOM(postId, updatedPost) {
+  const postElement = document.querySelector(`.like-button[data-post-id="${postId}"]`);
+  if (postElement) {
+
+    const likeImage = postElement.querySelector('img');
+    const newLikeImage = updatedPost.isLiked 
+      ? "./assets/images/like-active.svg" 
+      : "./assets/images/like-not-active.svg";
+    likeImage.src = newLikeImage;
+    
+    const likesCountElement = postElement.closest('.post-likes').querySelector('.post-likes-text strong');
+    if (likesCountElement) {
+      likesCountElement.textContent = updatedPost.likes.length;
+    }
+    
+
+    postElement.dataset.isLiked = updatedPost.isLiked;
+  }
+}
 
 const renderApp = () => {
   const appEl = document.getElementById("app");
@@ -180,7 +213,7 @@ const renderApp = () => {
           return;
         }
         
-     
+      
         if (!description.trim()) {
           alert("Введите описание поста");
           return;
@@ -191,10 +224,9 @@ const renderApp = () => {
           return;
         }
         
-      
         addPost({ token, description, imageUrl })
           .then(() => {
-          
+            // После успешного добавления переходим к списку постов
             smoothPageTransition(() => goToPage(POSTS_PAGE));
           })
           .catch((error) => {
