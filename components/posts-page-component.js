@@ -25,7 +25,7 @@ function simpleFormatDate(dateString) {
   }
 }
 
-
+// Функции для правильного склонения слов
 function getMinutesWord(minutes) {
   const lastDigit = minutes % 10;
   const lastTwoDigits = minutes % 100;
@@ -78,7 +78,7 @@ function getDaysWord(days) {
 }
 
 export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleLike, isUserPostsPage = false }) {
- 
+
   let pageHeader = '';
   if (isUserPostsPage && posts.length > 0) {
     const firstPost = posts[0];
@@ -96,10 +96,10 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       ? "./assets/images/like-active.svg" 
       : "./assets/images/like-not-active.svg";
     
-   
+  
     const imageSrc = post.imageUrl && post.imageUrl.trim() !== '' 
       ? post.imageUrl 
-      : "https://via.placeholder.com/500x500?text=No+Image";
+      : "./assets/images/default-image.jpg";
 
     return `
       <li class="post">
@@ -108,7 +108,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
           <p class="post-header__user-name">${post.user.name}</p>
         </div>
         <div class="post-image-container">
-          <img class="post-image" src="${imageSrc}" onerror="this.src='https://via.placeholder.com/500x500?text=No+Image'">
+          <img class="post-image" src="${imageSrc}" onerror="this.src='./assets/images/default-image.jpg'">
         </div>
         <div class="post-likes">
           <button data-post-id="${post.id}" data-is-liked="${isLiked}" class="like-button">
@@ -145,7 +145,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     element: document.querySelector(".header-container"),
   });
 
-  
+
   document.querySelectorAll(".post-header").forEach(userEl => {
     userEl.addEventListener("click", () => {
       const userId = userEl.dataset.userId;
@@ -157,12 +157,12 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
-  
+
   document.querySelectorAll('.like-button').forEach(button => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       
-    
+
       button.classList.add('liked');
       setTimeout(() => {
         button.classList.remove('liked');
@@ -171,7 +171,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       const postId = button.dataset.postId;
       const isLiked = button.dataset.isLiked === 'true';
       
-      
+    
       button.dataset.isLiked = !isLiked;
       
       if (typeof toggleLike === 'function') {
@@ -180,7 +180,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
-
+ 
   const container = document.querySelector('.page-container');
   if (container) {
     container.classList.add('page-transition');
