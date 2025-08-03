@@ -25,7 +25,7 @@ function simpleFormatDate(dateString) {
   }
 }
 
-
+// Функции для правильного склонения слов
 function getMinutesWord(minutes) {
   const lastDigit = minutes % 10;
   const lastTwoDigits = minutes % 100;
@@ -96,7 +96,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       ? "./assets/images/like-active.svg" 
       : "./assets/images/like-not-active.svg";
     
-
+  
     const imageSrc = post.imageUrl && post.imageUrl.trim() !== '' 
       ? post.imageUrl 
       : "./assets/images/default-image.jpg";
@@ -145,12 +145,15 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     element: document.querySelector(".header-container"),
   });
 
-  
+
   document.querySelectorAll(".post-header").forEach(userEl => {
     userEl.addEventListener("click", () => {
-      goToPage(USER_POSTS_PAGE, {
-        userId: userEl.dataset.userId,
-      });
+      const userId = userEl.dataset.userId;
+      if (userId) {
+        goToPage(USER_POSTS_PAGE, {
+          userId: userEl.dataset.userId,
+        });
+      }
     });
   });
 
@@ -159,7 +162,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       
-     
+
       button.classList.add('liked');
       setTimeout(() => {
         button.classList.remove('liked');
@@ -168,6 +171,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       const postId = button.dataset.postId;
       const isLiked = button.dataset.isLiked === 'true';
       
+    
       button.dataset.isLiked = !isLiked;
       
       if (typeof toggleLike === 'function') {
@@ -176,7 +180,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
-
+ 
   const container = document.querySelector('.page-container');
   if (container) {
     container.classList.add('page-transition');
