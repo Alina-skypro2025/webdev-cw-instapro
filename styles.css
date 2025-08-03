@@ -1,5 +1,7 @@
 .page-container {
   padding: 0 20px;
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
 .page-header {
@@ -380,6 +382,10 @@
 
 .like-button:active {
   transform: scale(1.2);
+}
+
+.like-button.liked {
+  animation: pulse 0.3s ease;
 }
 
 .user-name {
