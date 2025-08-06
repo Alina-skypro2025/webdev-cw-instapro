@@ -5,7 +5,7 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
   
   let imageUrl = "";
 
- 
+  
   const render = () => {
     element.innerHTML = `
       <div class="upload-image">
@@ -31,7 +31,7 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
       </div>
     `;
 
-   
+    
     const fileInputElement = element.querySelector(".file-upload-input");
     if (fileInputElement) {
       fileInputElement.addEventListener("change", () => {
@@ -42,11 +42,12 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
             labelEl.setAttribute("disabled", true);
             labelEl.textContent = "Загружаю файл...";
           }
-          
+
          
           uploadImage({ file })
-            .then(({ imageUrl: fileUrl }) => { 
-              imageUrl = fileUrl;
+            .then(({ imageUrl }) => { 
+              console.log("Получен URL изображения:", imageUrl); 
+              imageUrl = imageUrl; 
               if (typeof onImageUrlChange === 'function') { 
                 onImageUrlChange(imageUrl); 
               }
@@ -72,15 +73,15 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
     const removeButton = element.querySelector(".file-upload-remove-button");
     if (removeButton) {
       removeButton.addEventListener("click", () => {
-        imageUrl = ""; 
+        imageUrl = "";
         if (typeof onImageUrlChange === 'function') { 
           onImageUrlChange(imageUrl); 
         }
-        render(); 
+        render();
       });
     }
   };
 
-  
+
   render();
 }
