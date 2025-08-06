@@ -1,5 +1,5 @@
 const personalKey = "prod";
-const baseHost = "https://webdev-hw-api.vercel.app"; 
+const baseHost = "https://webdev-hw-api.vercel.app";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 export function getPosts({ token }) {
@@ -59,7 +59,6 @@ export function loginUser({ login, password }) {
   });
 }
 
-
 export function uploadImage({ file }) {
   const data = new FormData();
   data.append("file", file);
@@ -76,10 +75,10 @@ export function uploadImage({ file }) {
     })
     .then((data) => {
       console.log("Полный ответ от сервера uploadImage:", data);
-      
       return data;
     });
 }
+
 export function addPost({ token, description, imageUrl }) {
   return fetch(postsHost, {
     method: "POST",
@@ -88,10 +87,11 @@ export function addPost({ token, description, imageUrl }) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      description,
-      imageUrl,
+      description: description || "",
+      imageUrl: imageUrl || "",
     }),
   }).then((response) => {
+    console.log("Ответ от addPost:", response.status, response.statusText);
     if (response.status === 401) {
       throw new Error("Нет авторизации");
     }
