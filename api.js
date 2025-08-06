@@ -1,5 +1,5 @@
 const personalKey = "prod";
-const baseHost = "https://webdev-hw-api.vercel.app";
+const baseHost = "https://webdev-hw-api.vercel.app"; 
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 export function getPosts({ token }) {
@@ -75,8 +75,8 @@ export function uploadImage({ file }) {
       return response.json();
     })
     .then((data) => {
-      console.log("Ответ от сервера uploadImage:", data); // Для отладки
-      return data;
+      console.log("Ответ от сервера uploadImage:", data); 
+      return data.fileUrl; 
     });
 }
 
