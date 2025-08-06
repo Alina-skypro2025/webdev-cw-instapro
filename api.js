@@ -77,13 +77,9 @@ export function uploadImage({ file }) {
     .then((data) => {
       console.log("Полный ответ от сервера uploadImage:", data);
       
-      return {
-        fileUrl: data.fileUrl || data.imageUrl || data.url,
-        ...data
-      };
+      return data;
     });
 }
-
 export function addPost({ token, description, imageUrl }) {
   return fetch(postsHost, {
     method: "POST",
