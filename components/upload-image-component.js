@@ -24,7 +24,7 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
     
     element.innerHTML = html;
 
-    
+   
     const fileInput = element.querySelector(".file-upload-input");
     if (fileInput) {
       fileInput.addEventListener("change", async (event) => {
@@ -37,13 +37,15 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
           }
 
           try {
-            const response = await uploadImage({ file });
-            console.log("Ответ от uploadImage:", response);
+            console.log("Начинаем загрузку файла:", file.name);
+            const uploadResult = await uploadImage({ file });
+            console.log("Ответ от uploadImage:", uploadResult);
             
-            imageUrl = response.fileUrl || response.imageUrl; 
-            console.log("Сохраненный imageUrl:", imageUrl);
             
-            if (typeof onImageUrlChange === 'function') {
+            imageUrl = uploadResult.fileUrl || uploadResult.imageUrl || uploadResult.url || "";
+            console.log("Извлеченный imageUrl:", imageUrl);
+            
+            if (imageUrl && typeof onImageUrlChange === 'function') {
               onImageUrlChange(imageUrl);
             }
             
@@ -59,10 +61,10 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
             if (label) {
               label.removeAttribute("disabled");
               label.textContent = "Ошибка загрузки";
-              
+           
               setTimeout(() => {
-                if (label) {
-                  label.textContent = "Выберите фото";
+                if (element.querySelector(".file-upload-label")) {
+                  element.querySelector(".file-upload-label").textContent = "Выберите фото";
                 }
               }, 2000);
             }
