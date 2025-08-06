@@ -1,6 +1,6 @@
 const personalKey = "prod";
 const baseHost = "https://webdev-hw-api.vercel.app";
-const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
+const postsHost = ${baseHost}/api/v1/${personalKey}/instapro;
 
 export function getPosts({ token }) {
   return fetch(postsHost, {
@@ -13,7 +13,6 @@ export function getPosts({ token }) {
       if (response.status === 401) {
         throw new Error("Нет авторизации");
       }
-
       return response.json();
     })
     .then((data) => {
