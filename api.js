@@ -79,7 +79,7 @@ export function uploadImage({ file }) {
 }
 
 export function addPost({ token, description, imageUrl }) {
-  return fetch(postsHost, {
+  return fetch(`${baseHost}/api/v1/${personalKey}/instapro`, {
     method: "POST",
     headers: {
       Authorization: token,
@@ -90,7 +90,6 @@ export function addPost({ token, description, imageUrl }) {
       imageUrl: imageUrl || "",
     }),
   }).then((response) => {
-    console.log("Ответ от addPost:", response.status, response.statusText);
     if (response.status === 401) {
       throw new Error("Нет авторизации");
     }
