@@ -177,7 +177,7 @@ const renderApp = () => {
 
   switch (page) {
     case POSTS_PAGE:
-      renderPostsPageComponent({ appEl });
+      renderPostsPageComponent({ appEl, posts });
       break;
 
     case AUTH_PAGE:
@@ -220,15 +220,15 @@ const renderApp = () => {
       break;
 
     case USER_POSTS_PAGE:
-      renderPostsPageComponent({ appEl });
+      renderPostsPageComponent({ appEl, posts });
       break;
 
     case LOADING_PAGE:
-      renderLoadingPageComponent({ appEl });
+      renderLoadingPageComponent({ appEl, posts });
       break;
 
     default:
-      renderPostsPageComponent({ appEl });
+      renderPostsPageComponent({ appEl, posts });
       break;
   }
 };
