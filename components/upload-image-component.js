@@ -1,70 +1,72 @@
 import { uploadImage } from "../api.js";
 
-
 export function renderUploadImageComponent({ element, onImageUrlChange }) {
-  
   let imageUrl = "";
 
-  
   const render = () => {
-    element.innerHTML = `
+    const html = `
       <div class="upload-image">
-        ${
-          imageUrl
-            ? `
-            <div class="file-upload-image-container">
-              <img class="file-upload-image" src="${imageUrl}" alt="Загруженное изображение">
-              <button class="file-upload-remove-button button">Заменить фото</button>
-            </div>
-            `
-            : `
-            <label class="file-upload-label secondary-button">
-              <input
-                type="file"
-                class="file-upload-input"
-                style="display:none"
-              />
-              Выберите фото
-            </label>
+        ${imageUrl
+          ? `
+          <div class="file-upload-image-container">
+            <img class="file-upload-image" src="${imageUrl}" alt="Загруженное изображение">
+            <button class="file-upload-remove-button button">Заменить фото</button>
+          </div>
           `
-        }
+          : `
+          <label class="file-upload-label secondary-button">
+            <input type="file" class="file-upload-input" accept="image/*" style="display:none">
+            Выберите фото
+          </label>
+          `}
       </div>
     `;
+    
+    element.innerHTML = html;
 
- 
-    const fileInputElement = element.querySelector(".file-upload-input");
-    if (fileInputElement) {
-      fileInputElement.addEventListener("change", () => {
-        const file = fileInputElement.files[0];
+    
+    const fileInput = element.querySelector(".file-upload-input");
+    if (fileInput) {
+      fileInput.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
         if (file) {
-          const labelEl = element.querySelector(".file-upload-label");
-          if (labelEl) {
-            labelEl.setAttribute("disabled", true);
-            labelEl.textContent = "Загружаю файл...";
+          const label = element.querySelector(".file-upload-label");
+          if (label) {
+            label.setAttribute("disabled", "true");
+            label.textContent = "Загрузка...";
           }
 
-         
-          uploadImage({ file })
-            .then((fileUrl) => { 
-              console.log("Получен URL изображения:", fileUrl); 
-              imageUrl = fileUrl; // 
-              if (typeof onImageUrlChange === 'function') {
-                onImageUrlChange(imageUrl);
-              }
-              render(); 
-            })
-            .catch((error) => {
-              console.error("Ошибка при загрузке изображения:", error);
-              if (typeof onImageUrlChange === 'function') {
-                onImageUrlChange(""); 
-              }
+          try {
+            const response = await uploadImage({ file });
+            console.log("Ответ от uploadImage:", response);
+            
+            imageUrl = response.fileUrl || response.imageUrl; 
+            console.log("Сохраненный imageUrl:", imageUrl);
+            
+            if (typeof onImageUrlChange === 'function') {
+              onImageUrlChange(imageUrl);
+            }
+            
+            render();
+          } catch (error) {
+            console.error("Ошибка загрузки:", error);
+            
+            if (typeof onImageUrlChange === 'function') {
+              onImageUrlChange("");
+            }
+            
+            const label = element.querySelector(".file-upload-label");
+            if (label) {
+              label.removeAttribute("disabled");
+              label.textContent = "Ошибка загрузки";
               
-              const labelEl = element.querySelector(".file-upload-label");
-              if (labelEl) {
-                labelEl.removeAttribute("disabled");
-                labelEl.textContent = "Выберите фото";
-              }
-            });
+              setTimeout(() => {
+                if (label) {
+                  label.textContent = "Выберите фото";
+                }
+              }, 2000);
+            }
+          }
         }
       });
     }
@@ -74,10 +76,10 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
     if (removeButton) {
       removeButton.addEventListener("click", () => {
         imageUrl = "";
-        if (typeof onImageUrlChange === 'function') { 
-          onImageUrlChange(imageUrl); 
+        if (typeof onImageUrlChange === 'function') {
+          onImageUrlChange(imageUrl);
         }
-        render(); 
+        render();
       });
     }
   };
