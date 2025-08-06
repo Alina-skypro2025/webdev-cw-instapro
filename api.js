@@ -1,4 +1,3 @@
-
 const personalKey = "prod";
 const baseHost = "https://webdev-hw-api.vercel.app";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
@@ -25,6 +24,9 @@ export function getPosts({ token }) {
 export function registerUser({ login, password, name, imageUrl }) {
   return fetch(baseHost + "/api/user", {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       login,
       password,
@@ -42,6 +44,9 @@ export function registerUser({ login, password, name, imageUrl }) {
 export function loginUser({ login, password }) {
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       login,
       password,
@@ -62,11 +67,18 @@ export function uploadImage({ file }) {
   return fetch(baseHost + "/api/upload/image", {
     method: "POST",
     body: data,
-  }).then((response) => {
-    return response.json();
-  });
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      console.log("Ответ от сервера uploadImage:", data); // Для отладки
+      return data;
+    });
 }
-
 
 export function addPost({ token, description, imageUrl }) {
   return fetch(postsHost, {
@@ -90,7 +102,6 @@ export function addPost({ token, description, imageUrl }) {
   });
 }
 
-
 export function getUserPosts({ token, userId }) {
   return fetch(`${postsHost}/user-posts/${userId}`, {
     method: "GET",
@@ -109,7 +120,6 @@ export function getUserPosts({ token, userId }) {
     });
 }
 
-
 export function likePost({ token, postId }) {
   return fetch(`${postsHost}/${postId}/like`, {
     method: "POST",
@@ -123,7 +133,6 @@ export function likePost({ token, postId }) {
     return response.json();
   });
 }
-
 
 export function dislikePost({ token, postId }) {
   return fetch(`${postsHost}/${postId}/dislike`, {
