@@ -1,8 +1,7 @@
-import { uploadImage } from "../api.js";
 import { renderUploadImageComponent } from "./upload-image-component.js";
 
 export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
-  let currentImageUrl = ""; 
+  let currentImageUrl = "";
 
   const appHtml = `
     <div class="page-container">
@@ -28,7 +27,7 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
 
   appEl.innerHTML = appHtml;
 
-  
+
   renderUploadImageComponent({
     element: document.getElementById("upload-image-conrainer"),
     onImageUrlChange: (imageUrl) => {
