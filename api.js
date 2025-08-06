@@ -75,8 +75,12 @@ export function uploadImage({ file }) {
       return response.json();
     })
     .then((data) => {
-      console.log("Ответ от сервера uploadImage:", data); 
-      return data.fileUrl; 
+      console.log("Полный ответ от сервера uploadImage:", data);
+      
+      return {
+        fileUrl: data.fileUrl || data.imageUrl || data.url,
+        ...data
+      };
     });
 }
 
