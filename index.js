@@ -125,7 +125,7 @@ export const goToPage = (newPage, data) => {
 export const toggleLike = (postId, isLiked) => {
   const token = getToken();
   if (!token) {
-    
+  
     const appEl = document.getElementById("app");
     const container = appEl.querySelector('.page-container');
     
@@ -144,7 +144,7 @@ export const toggleLike = (postId, isLiked) => {
   
   return likePromise({ token, postId })
     .then((responseData) => {
-     
+    
       const postIndex = posts.findIndex(post => post.id === postId);
       if (postIndex !== -1) {
         posts[postIndex] = responseData.post;
@@ -163,19 +163,20 @@ export const toggleLike = (postId, isLiked) => {
 function updatePostInDOM(postId, updatedPost) {
   const postElement = document.querySelector(`.like-button[data-post-id="${postId}"]`);
   if (postElement) {
-
+   
     const likeImage = postElement.querySelector('img');
     const newLikeImage = updatedPost.isLiked 
       ? "./assets/images/like-active.svg" 
       : "./assets/images/like-not-active.svg";
     likeImage.src = newLikeImage;
     
+  
     const likesCountElement = postElement.closest('.post-likes').querySelector('.post-likes-text strong');
     if (likesCountElement) {
       likesCountElement.textContent = updatedPost.likes.length;
     }
     
-
+   
     postElement.dataset.isLiked = updatedPost.isLiked;
   }
 }
@@ -224,9 +225,10 @@ const renderApp = () => {
           return;
         }
         
+        
         addPost({ token, description, imageUrl })
           .then(() => {
-            // После успешного добавления переходим к списку постов
+           
             smoothPageTransition(() => goToPage(POSTS_PAGE));
           })
           .catch((error) => {
