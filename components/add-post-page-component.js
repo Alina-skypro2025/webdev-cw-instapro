@@ -28,7 +28,7 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
 
   appEl.innerHTML = appHtml;
 
-
+  
   renderUploadImageComponent({
     element: document.getElementById("upload-image-conrainer"),
     onImageUrlChange: (imageUrl) => {
@@ -37,25 +37,31 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
     },
   });
 
-  
-  document.getElementById("add-button").addEventListener("click", () => {
-    const description = document.getElementById("post-description").value.trim();
-    
-    console.log("Попытка добавить пост:", { description, imageUrl: currentImageUrl });
-    
-    if (!description) {
-      document.getElementById("form-error").textContent = "Введите описание поста";
-      return;
-    }
-    
-    if (!currentImageUrl) {
-      document.getElementById("form-error").textContent = "Загрузите изображение";
-      return;
-    }
-    
-    onAddPostClick({
-      description,
-      imageUrl: currentImageUrl,
+ 
+  const addButton = document.getElementById("add-button");
+  if (addButton) {
+    addButton.addEventListener("click", () => {
+      const description = document.getElementById("post-description").value.trim();
+      
+      console.log("Попытка добавить пост:", { description, imageUrl: currentImageUrl });
+      
+      if (!description) {
+        document.getElementById("form-error").textContent = "Введите описание поста";
+        return;
+      }
+      
+      if (!currentImageUrl) {
+        document.getElementById("form-error").textContent = "Загрузите изображение";
+        return;
+      }
+      
+      
+      document.getElementById("form-error").textContent = "";
+      
+      onAddPostClick({
+        description,
+        imageUrl: currentImageUrl,
+      });
     });
-  });
+  }
 }
