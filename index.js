@@ -78,17 +78,11 @@ export const goToPage = (newPage, data) => {
       LOADING_PAGE,
     ].includes(newPage)
   ) {
-    if (newPage === ADD_POSTS_PAGE) {
-      
-      page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
-      return renderApp();
-    }
-
     if (newPage === POSTS_PAGE) {
       page = LOADING_PAGE;
       renderApp();
 
-      return getPosts({ token: getToken() })
+      return getPosts({ token: getToken() }) // Убедитесь, что токен передается
         .then((newPosts) => {
           console.log("Index: Получены посты:", newPosts);
           page = POSTS_PAGE;
@@ -97,6 +91,15 @@ export const goToPage = (newPage, data) => {
         })
         .catch((error) => {
           console.error("Index: Ошибка получения постов:", error);
+          alert("Не удалось получить посты: " + error.message);
+          page = POSTS_PAGE; // Показываем страницу даже с ошибкой
+          renderApp();
+        });
+    }
+
+    
+  }
+};
          
           page = POSTS_PAGE; 
           renderApp();
