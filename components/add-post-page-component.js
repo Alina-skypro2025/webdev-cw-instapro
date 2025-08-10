@@ -1,70 +1,63 @@
-import { addPost } from "../api.js"; 
 import { renderUploadImageComponent } from "./upload-image-component.js";
 
-export function renderAddPostPageComponent({ appEl, onPostAdded }) {
+export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
   let currentImageUrl = "";
 
-  appEl.innerHTML = `
+  const appHtml = `
     <div class="page-container">
       <div class="header-container"></div>
       <div class="form">
         <h3 class="form-title">Добавить пост</h3>
         <div class="form-inputs">
           <div class="upload-image-container">
-            <div id="upload-image-container"></div>
+            <div id="upload-image-conrainer"></div>
           </div>
           <label>
             Описание поста
-            <textarea class="form-textarea" id="post-description" rows="4" placeholder="Подпись к фото..."></textarea>
+            <textarea class="form-textarea" id="post-description"></textarea>
           </label>
-          <div class="form-actions">
-            <button class="button" id="add-button">Опубликовать</button>
-            <button class="button button-secondary" id="cancel-button">Отмена</button>
-          </div>
+          <div class="form-error" id="form-error"></div>
+        </div>
+        <div class="form-footer">
+          <button class="button" id="add-button">Добавить</button>
         </div>
       </div>
     </div>
   `;
 
+  appEl.innerHTML = appHtml;
+
   renderUploadImageComponent({
-    elementId: "upload-image-container",
-    onImageUrl: (url) => {
-      currentImageUrl = url;
-      console.log("Готовим данные:", { description: getDesc(), imageUrl: currentImageUrl });
+    element: document.getElementById("upload-image-conrainer"),
+    onImageUrlChange: (imageUrl) => {
+      console.log("URL изображения обновлен:", imageUrl);
+      currentImageUrl = imageUrl;
     },
   });
 
-  const getDesc = () => (document.getElementById("post-description").value || "").trim();
+  const addButton = document.getElementById("add-button");
+  if (addButton) {
+    addButton.addEventListener("click", () => {
+      const description = document.getElementById("post-description").value.trim();
 
-  document.getElementById("add-button").addEventListener("click", async () => {
-    try {
-      const description = getDesc();
+      console.log("Попытка добавить пост:", { description, imageUrl: currentImageUrl });
+
+      if (!description) {
+        document.getElementById("form-error").textContent = "Введите описание поста";
+        return;
+      }
 
       if (!currentImageUrl) {
-        alert("Сначала загрузите изображение.");
-        return;
-      }
-      if (!description) {
-        alert("Напишите описание.");
+        document.getElementById("form-error").textContent = "Загрузите изображение";
         return;
       }
 
-  
-      const token = getToken();
-      if (!token) {
-        alert("Ошибка авторизации. Пожалуйста, войдите снова.");
-        return;
-      }
+      document.getElementById("form-error").textContent = "";
 
-      await addPost({ token, description, imageUrl: currentImageUrl });
-      onPostAdded?.();
-    } catch (e) {
-      console.error(e);
-      alert(e.message || "Ошибка при добавлении поста");
-    }
-  });
-
-  document.getElementById("cancel-button").addEventListener("click", () => {
-    history.back();
-  });
+      onAddPostClick({
+        description,
+        imageUrl: currentImageUrl,
+      });
+    });
+  }
 }
