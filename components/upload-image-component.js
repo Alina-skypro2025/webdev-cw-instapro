@@ -1,4 +1,6 @@
+
 import { uploadImage } from "../api.js";
+
 
 export function renderUploadImageComponent({ element, onImageUrlChange }) {
   let imageUrl = "";
@@ -7,13 +9,13 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
     const html = `
       <div class="upload-image">
         ${imageUrl
-          ? `
+        ? `
           <div class="file-upload-image-container">
             <img class="file-upload-image" src="${imageUrl}" alt="Загруженное изображение">
             <button class="file-upload-remove-button button">Заменить фото</button>
           </div>
           `
-          : `
+        : `
           <label class="file-upload-label secondary-button">
             <input type="file" class="file-upload-input" accept="image/*" style="display:none">
             Выберите фото
@@ -21,7 +23,7 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
           `}
       </div>
     `;
-    
+
     element.innerHTML = html;
 
     const fileInput = element.querySelector(".file-upload-input");
@@ -36,27 +38,31 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
           }
 
           try {
-            console.log("Начинаем загрузку файла:", file.name);
+            console.log("UploadComponent: Начинаем загрузку файла:", file.name);
             const uploadResult = await uploadImage({ file });
-            
+            console.log("UploadComponent: Ответ от uploadImage:", uploadResult);
+
+            // Проверяем разные возможные поля с URL в ответе
             imageUrl = uploadResult.fileUrl || uploadResult.imageUrl || uploadResult.url || "";
-            
-            if (typeof onImageUrlChange === 'function') {
+            console.log("UploadComponent: Извлеченный imageUrl:", imageUrl);
+
+            if (imageUrl && typeof onImageUrlChange === 'function') {
               onImageUrlChange(imageUrl);
             }
-            
+
             render();
           } catch (error) {
-            console.error("Ошибка загрузки:", error);
-            
+            console.error("UploadComponent: Ошибка загрузки:", error);
+
             if (typeof onImageUrlChange === 'function') {
               onImageUrlChange("");
             }
-            
+
             const label = element.querySelector(".file-upload-label");
             if (label) {
               label.removeAttribute("disabled");
               label.textContent = "Ошибка загрузки";
+
               
               setTimeout(() => {
                 if (element.querySelector(".file-upload-label")) {
