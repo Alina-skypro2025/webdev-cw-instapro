@@ -121,6 +121,7 @@ export const goToPage = (newPage, data) => {
 export const toggleLike = (postId, isLiked) => {
   const token = getToken();
   
+
   if (!token) {
     const appEl = document.getElementById("app");
     const container = appEl.querySelector('.page-container');
@@ -195,6 +196,7 @@ const renderApp = () => {
   }
 
   if (page === ADD_POSTS_PAGE) {
+    
     if (!user) {
       goToPage(AUTH_PAGE);
       return;
@@ -209,7 +211,7 @@ const renderApp = () => {
           return;
         }
         
-       
+        
         if (!description.trim()) {
           alert("Введите описание поста");
           return;
@@ -220,7 +222,9 @@ const renderApp = () => {
           return;
         }
         
-        addPost({ token, description, imageUrl })
+        console.log("Отправляем данные на сервер:", { description, imageUrl });
+        
+        addPost({ token, description: description.trim(), imageUrl })
           .then(() => {
             smoothPageTransition(() => goToPage(POSTS_PAGE));
           })
