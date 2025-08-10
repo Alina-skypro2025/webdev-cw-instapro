@@ -1,11 +1,14 @@
+
 const personalKey = "prod";
-const baseHost = "https://wedev-api.sky.pro";
+const baseHost = "https://wedev-api.sky.pro"; // Исправлено: Удалены пробелы
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
+
 
 export function getPosts({ token }) {
   const headers = {
     "Content-Type": "application/json",
   };
+
 
   if (token) {
     headers.Authorization = token;
@@ -16,6 +19,13 @@ export function getPosts({ token }) {
     headers,
   })
     .then((response) => {
+      
+      if (response.status === 400) {
+        
+        return response.json().then((errorData) => {
+          throw new Error(`Bad Request: ${errorData?.error || 'Invalid request'}`);
+        });
+      }
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -25,6 +35,7 @@ export function getPosts({ token }) {
       return data.posts;
     });
 }
+
 
 export function registerUser({ login, password, name, imageUrl }) {
   return fetch(baseHost + "/api/user", {
@@ -40,7 +51,10 @@ export function registerUser({ login, password, name, imageUrl }) {
     }),
   }).then((response) => {
     if (response.status === 400) {
-      throw new Error("Такой пользователь уже существует");
+    
+      return response.json().then((errorData) => {
+         throw new Error(errorData?.error || "Такой пользователь уже существует");
+      });
     }
     if (!response.ok) {
       throw new Error("Ошибка при регистрации");
@@ -48,6 +62,7 @@ export function registerUser({ login, password, name, imageUrl }) {
     return response.json();
   });
 }
+
 
 export function loginUser({ login, password }) {
   return fetch(baseHost + "/api/user/login", {
@@ -61,7 +76,10 @@ export function loginUser({ login, password }) {
     }),
   }).then((response) => {
     if (response.status === 400) {
-      throw new Error("Неверный логин или пароль");
+      
+      return response.json().then((errorData) => {
+         throw new Error(errorData?.error || "Неверный логин или пароль");
+      });
     }
     if (!response.ok) {
       throw new Error("Ошибка при входе");
@@ -69,6 +87,7 @@ export function loginUser({ login, password }) {
     return response.json();
   });
 }
+
 
 export function uploadImage({ file }) {
   const data = new FormData();
@@ -86,15 +105,17 @@ export function uploadImage({ file }) {
     });
 }
 
+
 export function addPost({ token, description, imageUrl }) {
   console.log("API: Отправляем данные на сервер:", { description, imageUrl });
 
   return fetch(postsHost, {
     method: "POST",
     headers: {
-  
-      Authorization: token,
+      
       "Content-Type": "application/json",
+     
+      Authorization: token,
     },
     body: JSON.stringify({
       description: description || "",
@@ -108,6 +129,7 @@ export function addPost({ token, description, imageUrl }) {
      
       return response.json().then((errorData) => {
         console.error("API: Ошибка 400 от сервера:", errorData);
+       
         throw new Error(errorData?.error || "Не переданы обязательные данные");
       });
     }
@@ -118,11 +140,13 @@ export function addPost({ token, description, imageUrl }) {
   });
 }
 
+
 export function getUserPosts({ token, userId }) {
   const headers = {
     "Content-Type": "application/json",
   };
 
+  
   if (token) {
     headers.Authorization = token;
   }
@@ -132,6 +156,12 @@ export function getUserPosts({ token, userId }) {
     headers,
   })
     .then((response) => {
+    
+      if (response.status === 400) {
+        return response.json().then((errorData) => {
+          throw new Error(`Bad Request: ${errorData?.error || 'Invalid request'}`);
+        });
+      }
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -141,6 +171,7 @@ export function getUserPosts({ token, userId }) {
       return data.posts;
     });
 }
+
 
 export function likePost({ token, postId }) {
   return fetch(`${postsHost}/${postId}/like`, {
@@ -158,6 +189,7 @@ export function likePost({ token, postId }) {
     return response.json();
   });
 }
+
 
 export function dislikePost({ token, postId }) {
   return fetch(`${postsHost}/${postId}/dislike`, {
