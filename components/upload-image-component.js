@@ -37,13 +37,10 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
           }
 
           try {
-            console.log("Начинаем загрузку файла:", file.name);
             const uploadResult = await uploadImage({ file });
-            console.log("Ответ от uploadImage:", uploadResult);
             
-           
+            
             imageUrl = uploadResult.fileUrl || uploadResult.imageUrl || uploadResult.url || "";
-            console.log("Извлеченный imageUrl:", imageUrl);
             
             if (imageUrl && typeof onImageUrlChange === 'function') {
               onImageUrlChange(imageUrl);
@@ -61,6 +58,7 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
             if (label) {
               label.removeAttribute("disabled");
               label.textContent = "Ошибка загрузки";
+              
             
               setTimeout(() => {
                 if (element.querySelector(".file-upload-label")) {
@@ -73,7 +71,7 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
       });
     }
 
- 
+
     const removeButton = element.querySelector(".file-upload-remove-button");
     if (removeButton) {
       removeButton.addEventListener("click", () => {
