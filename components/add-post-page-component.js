@@ -40,13 +40,13 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
 
   if (addButton && descriptionElement && errorElement) {
     addButton.addEventListener("click", () => {
-      const description = descriptionElement.value;
-
-      
-      errorElement.textContent = "";
+      const description = descriptionElement.value.trim();
 
      
-      if (!description.trim()) {
+      errorElement.textContent = "";
+
+      
+      if (!description) {
         errorElement.textContent = "Введите описание поста";
         return;
       }
@@ -57,7 +57,7 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
       }
 
       onAddPostClick({
-        description: description.trim(),
+        description,
         imageUrl: currentImageUrl,
       });
     });
