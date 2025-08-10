@@ -1,5 +1,5 @@
 const personalKey = "prod";
-const baseHost = "https://wedev-api.sky.pro"; 
+const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 export function getPosts({ token }) {
@@ -26,7 +26,6 @@ export function getPosts({ token }) {
     });
 }
 
-
 export function registerUser({ login, password, name, imageUrl }) {
   return fetch(baseHost + "/api/user", {
     method: "POST",
@@ -50,7 +49,6 @@ export function registerUser({ login, password, name, imageUrl }) {
   });
 }
 
-
 export function loginUser({ login, password }) {
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
@@ -72,7 +70,6 @@ export function loginUser({ login, password }) {
   });
 }
 
-
 export function uploadImage({ file }) {
   const data = new FormData();
   data.append("file", file);
@@ -89,15 +86,13 @@ export function uploadImage({ file }) {
     });
 }
 
-
 export function addPost({ token, description, imageUrl }) {
-
   console.log("API: Отправляем данные на сервер:", { description, imageUrl });
 
   return fetch(postsHost, {
     method: "POST",
     headers: {
-     
+  
       Authorization: token,
       "Content-Type": "application/json",
     },
@@ -110,7 +105,7 @@ export function addPost({ token, description, imageUrl }) {
       throw new Error("Нет авторизации");
     }
     if (response.status === 400) {
-      
+     
       return response.json().then((errorData) => {
         console.error("API: Ошибка 400 от сервера:", errorData);
         throw new Error(errorData?.error || "Не переданы обязательные данные");
@@ -123,13 +118,11 @@ export function addPost({ token, description, imageUrl }) {
   });
 }
 
-
 export function getUserPosts({ token, userId }) {
   const headers = {
     "Content-Type": "application/json",
   };
 
- 
   if (token) {
     headers.Authorization = token;
   }
@@ -149,7 +142,6 @@ export function getUserPosts({ token, userId }) {
     });
 }
 
-
 export function likePost({ token, postId }) {
   return fetch(`${postsHost}/${postId}/like`, {
     method: "POST",
@@ -166,7 +158,6 @@ export function likePost({ token, postId }) {
     return response.json();
   });
 }
-
 
 export function dislikePost({ token, postId }) {
   return fetch(`${postsHost}/${postId}/dislike`, {
