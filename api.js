@@ -1,66 +1,164 @@
+const personalKey = "prod";
+const baseHost = "https://webdev-hw-api.vercel.app";
+const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
-const API_URL = "https://webdev-hw-api.vercel.app/api/v1/prod/instapro";
+export function getPosts({ token }) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  
+  if (token) {
+    headers.Authorization = token;
+  }
 
-let token = localStorage.getItem("instaproToken") || "";
-
-export const setToken = (t) => {
-  token = t;
-  localStorage.setItem("instaproToken", t);
-};
-
-const authHeaders = () => ({
-  "Authorization": Bearer ${token},
-  "Content-Type": "application/json", 
-});
-
-
-export async function getPosts() {
-  const resp = await fetch(API_URL, {
+  return fetch(postsHost, {
     method: "GET",
-    headers: { "Authorization": Bearer ${token} },
-  });
-  if (!resp.ok) throw new Error(`Ошибка загрузки постов: ${resp.status}`);
-  const data = await resp.json();
-  return data.posts || data; 
+    headers,
+  })
+    .then((response) => {
+      return response.json();
+    })
+    .then((data) => {
+      return data.posts;
+    });
 }
 
-
-export async function addPost({ description, imageUrl }) {
-
-  const body = JSON.stringify({ description, imageUrl }); 
-
-  const resp = await fetch(API_URL, {
+export function registerUser({ login, password, name, imageUrl }) {
+  return fetch(baseHost + "/api/user", {
     method: "POST",
-    headers: authHeaders(), 
-    body,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      login,
+      password,
+      name,
+      imageUrl,
+    }),
+  }).then((response) => {
+    if (response.status === 400) {
+      throw new Error("Такой пользователь уже существует");
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при регистрации");
+    }
+    return response.json();
   });
-
-  if (resp.status === 401) {
-    throw new Error("Не авторизовано. Проверьте токен.");
-  }
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => "");
-    throw new Error(text || `Ошибка добавления поста: ${resp.status}`);
-  }
-  return resp.json();
 }
 
-
-export async function likePost(postId) {
-  const resp = await fetch(`${API_URL}/${postId}/like`, {
+export function loginUser({ login, password }) {
+  return fetch(baseHost + "/api/user/login", {
     method: "POST",
-    headers: { "Authorization": Bearer ${token} },
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      login,
+      password,
+    }),
+  }).then((response) => {
+    if (response.status === 400) {
+      throw new Error("Неверный логин или пароль");
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при входе");
+    }
+    return response.json();
   });
-  if (!resp.ok) throw new Error(`Не удалось поставить лайк: ${resp.status}`);
-  return resp.json();
 }
 
+export function uploadImage({ file }) {
+  const data = new FormData();
+  data.append("file", file);
 
-export async function unlikePost(postId) {
-  const resp = await fetch(`${API_URL}/${postId}/like`, {
-    method: "DELETE",
-    headers: { "Authorization": Bearer ${token} },
+  return fetch(baseHost + "/api/upload/image", {
+    method: "POST",
+    body: data,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    });
+}
+
+export function addPost({ token, description, imageUrl }) {
+  return fetch(`${baseHost}/api/v1/${personalKey}/instapro`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      description: description || "",
+      imageUrl: imageUrl || "",
+    }),
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+    if (response.status === 400) {
+      throw new Error("Не переданы обязательные данные");
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при добавлении поста");
+    }
+    return response.json();
   });
-  if (!resp.ok) throw new Error(`Не удалось снять лайк: ${resp.status}`);
-  return resp.json();
+}
+
+export function getUserPosts({ token, userId }) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  
+  if (token) {
+    headers.Authorization = token;
+  }
+
+  return fetch(`${postsHost}/user-posts/${userId}`, {
+    method: "GET",
+    headers,
+  })
+    .then((response) => {
+      return response.json();
+    })
+    .then((data) => {
+      return data.posts;
+    });
+}
+
+export function likePost({ token, postId }) {
+  return fetch(`${postsHost}/${postId}/like`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    },
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при лайке");
+    }
+    return response.json();
+  });
+}
+
+export function dislikePost({ token, postId }) {
+  return fetch(`${postsHost}/${postId}/dislike`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    },
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при дизлайке");
+    }
+    return response.json();
+  });
 }
