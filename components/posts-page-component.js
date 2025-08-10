@@ -1,7 +1,6 @@
 import { USER_POSTS_PAGE } from "../routes.js";
 import { renderHeaderComponent } from "./header-component.js";
 
-
 function simpleFormatDate(dateString) {
   try {
     const date = new Date(dateString);
@@ -25,7 +24,7 @@ function simpleFormatDate(dateString) {
   }
 }
 
-// Функции для правильного склонения слов
+
 function getMinutesWord(minutes) {
   const lastDigit = minutes % 10;
   const lastTwoDigits = minutes % 100;
@@ -96,7 +95,6 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       ? "./assets/images/like-active.svg" 
       : "./assets/images/like-not-active.svg";
     
-  
     const imageSrc = post.imageUrl && post.imageUrl.trim() !== '' 
       ? post.imageUrl 
       : "./assets/images/default-image.jpg";
@@ -143,9 +141,11 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
 
   renderHeaderComponent({
     element: document.querySelector(".header-container"),
+    user,
+    goToPage,
   });
 
-
+ 
   document.querySelectorAll(".post-header").forEach(userEl => {
     userEl.addEventListener("click", () => {
       const userId = userEl.dataset.userId;
@@ -157,12 +157,12 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
-
+  
   document.querySelectorAll('.like-button').forEach(button => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       
-
+      
       button.classList.add('liked');
       setTimeout(() => {
         button.classList.remove('liked');
@@ -171,8 +171,9 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       const postId = button.dataset.postId;
       const isLiked = button.dataset.isLiked === 'true';
       
-    
+     
       button.dataset.isLiked = !isLiked;
+      
       
       if (typeof toggleLike === 'function') {
         toggleLike(postId, isLiked);
@@ -180,7 +181,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
- 
+  
   const container = document.querySelector('.page-container');
   if (container) {
     container.classList.add('page-transition');
