@@ -1,15 +1,11 @@
-
 const personalKey = "prod";
-
-const baseHost = "https://wedev-api.sky.pro";
+const baseHost = "https://wedev-api.sky.pro"; 
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
-
 
 export function getPosts({ token }) {
   const headers = {
     "Content-Type": "application/json",
   };
-
 
   if (token) {
     headers.Authorization = token;
