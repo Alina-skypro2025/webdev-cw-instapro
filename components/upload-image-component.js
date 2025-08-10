@@ -3,6 +3,12 @@ import { uploadImage } from "../api.js";
 
 
 export function renderUploadImageComponent({ element, onImageUrlChange }) {
+ 
+  if (!element) {
+    console.error("UploadImageComponent: Не передан DOM-элемент для рендеринга.");
+    return;
+  }
+
   let imageUrl = "";
 
   const render = () => {
@@ -28,9 +34,12 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
 
     const fileInput = element.querySelector(".file-upload-input");
     if (fileInput) {
+    
       fileInput.addEventListener("change", async (event) => {
-        const file = event.target.files[0];
-        if (file) {
+        
+        const files = event.target.files;
+        if (files && files.length > 0) {
+          const file = files[0];
           const label = element.querySelector(".file-upload-label");
           if (label) {
             label.setAttribute("disabled", "true");
@@ -42,20 +51,34 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
             const uploadResult = await uploadImage({ file });
             console.log("UploadComponent: Ответ от uploadImage:", uploadResult);
 
-            // Проверяем разные возможные поля с URL в ответе
-            imageUrl = uploadResult.fileUrl || uploadResult.imageUrl || uploadResult.url || "";
+            
+            if (uploadResult && typeof uploadResult === 'object' && uploadResult.fileUrl) {
+              imageUrl = uploadResult.fileUrl; 
+            } else {
+              
+              imageUrl = uploadResult?.imageUrl || uploadResult?.url || "";
+          
+              if (!imageUrl) {
+                 console.warn("UploadComponent: URL изображения не найден в ответе API.", uploadResult);
+                 throw new Error("URL изображения отсутствует в ответе сервера.");
+              }
+            }
             console.log("UploadComponent: Извлеченный imageUrl:", imageUrl);
 
-            if (imageUrl && typeof onImageUrlChange === 'function') {
+          
+            if (typeof onImageUrlChange === 'function') {
               onImageUrlChange(imageUrl);
+            } else {
+              console.warn("UploadComponent: onImageUrlChange не является функцией.");
             }
 
             render();
           } catch (error) {
             console.error("UploadComponent: Ошибка загрузки:", error);
 
+           
             if (typeof onImageUrlChange === 'function') {
-              onImageUrlChange("");
+              onImageUrlChange(""); 
             }
 
             const label = element.querySelector(".file-upload-label");
@@ -63,10 +86,12 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
               label.removeAttribute("disabled");
               label.textContent = "Ошибка загрузки";
 
-              
+             
               setTimeout(() => {
-                if (element.querySelector(".file-upload-label")) {
-                  element.querySelector(".file-upload-label").textContent = "Выберите фото";
+               
+                const currentLabel = element.querySelector(".file-upload-label");
+                if (currentLabel) {
+                  currentLabel.textContent = "Выберите фото";
                 }
               }, 2000);
             }
@@ -79,6 +104,7 @@ export function renderUploadImageComponent({ element, onImageUrlChange }) {
     if (removeButton) {
       removeButton.addEventListener("click", () => {
         imageUrl = "";
+      
         if (typeof onImageUrlChange === 'function') {
           onImageUrlChange(imageUrl);
         }
