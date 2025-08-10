@@ -1,25 +1,14 @@
 
 export function saveUserToLocalStorage(user) {
-
-  if (user === null || user === undefined) {
-    console.warn("Helpers: Попытка сохранить пустого пользователя в localStorage.");
-    removeUserFromLocalStorage();
+  
+  if (!user || !user.token || !user.name || !user.id) {
+    console.warn("Helpers: Попытка сохранить некорректного пользователя в localStorage.", user);
     return;
   }
 
   try {
- 
-    if (typeof user === 'object' && user !== null && !Array.isArray(user)) {
-      
-       if (user.token && user.name && user.id !== undefined) { 
-         window.localStorage.setItem("user", JSON.stringify(user));
-         console.log("Helpers: Пользователь успешно сохранен в localStorage.");
-       } else {
-         console.warn("Helpers: Объект пользователя не содержит всех обязательных полей (token, name, id).", user);
-       }
-    } else {
-       console.warn("Helpers: Попытка сохранить некорректный объект пользователя.", user);
-    }
+    window.localStorage.setItem("user", JSON.stringify(user));
+    console.log("Helpers: Пользователь успешно сохранен в localStorage.");
   } catch (e) {
     console.error("Helpers: Ошибка сохранения пользователя в localStorage:", e);
   }
@@ -29,16 +18,15 @@ export function saveUserToLocalStorage(user) {
 export function getUserFromLocalStorage() {
   try {
     const userStr = window.localStorage.getItem("user");
- 
-    if (userStr && userStr !== "null" && userStr !== "undefined") {
+    if (userStr) {
       const user = JSON.parse(userStr);
-     
-      if (user && typeof user === 'object' && user.token && user.name && user.id !== undefined) {
-         console.log("Helpers: Пользователь успешно получен из localStorage.");
-         return user;
+    
+      if (user && user.token && user.name && user.id) {
+        console.log("Helpers: Пользователь успешно получен из localStorage.");
+        return user;
       } else {
-         console.warn("Helpers: Некорректные данные пользователя в localStorage.", user);
-         return null;
+        console.warn("Helpers: Некорректные данные пользователя в localStorage.", user);
+        return null;
       }
     }
     return null;
