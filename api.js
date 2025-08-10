@@ -1,13 +1,11 @@
 
 const personalKey = "prod";
-const baseHost = "https://wedev-api.sky.pro"; // Исправлено: Удалены пробелы
+const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 
 export function getPosts({ token }) {
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  const headers = {};
 
 
   if (token) {
@@ -19,13 +17,6 @@ export function getPosts({ token }) {
     headers,
   })
     .then((response) => {
-      
-      if (response.status === 400) {
-        
-        return response.json().then((errorData) => {
-          throw new Error(`Bad Request: ${errorData?.error || 'Invalid request'}`);
-        });
-      }
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
