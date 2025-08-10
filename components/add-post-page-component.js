@@ -1,81 +1,92 @@
-import { uploadImage } from "../api.js";
+
 import { renderUploadImageComponent } from "./upload-image-component.js";
-import { renderHeaderComponent } from "./header-component.js";
+
+import { getToken } from "../index.js";
+
+
 
 export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
-  let imageUrl = "";
+  let currentImageUrl = "";
 
-  const render = () => {
-    const appHtml = `
-      <div class="page-container">
-        <div class="header-container"></div>
-        <div class="form">
-          <h3 class="form-title">Добавить пост</h3>
-          <div class="form-inputs">
-            <div class="upload-image-container">
-              <div id="upload-image-conrainer"></div>
-            </div>
-            <label>
-              Описание поста
-              <textarea class="form-textarea" id="post-description"></textarea>
-            </label>
-            <div class="form-error" id="form-error"></div>
+  const appHtml = `
+    <div class="page-container">
+      <div class="header-container"></div>
+      <div class="form">
+        <h3 class="form-title">Добавить пост</h3>
+        <div class="form-inputs">
+          <div class="upload-image-container">
+            <div id="upload-image-container"></div>
           </div>
-          <div class="form-footer">
-            <button class="button" id="add-button">Добавить</button>
-          </div>
+          <label>
+            Описание поста
+            <textarea class="form-textarea" id="post-description"></textarea>
+          </label>
+          <div class="form-error" id="form-error"></div>
+        </div>
+        <div class="form-footer">
+          <button class="button" id="add-button">Добавить</button>
         </div>
       </div>
-    `;
+    </div>
+  `;
 
-    appEl.innerHTML = appHtml;
-
-    
-    renderHeaderComponent({
-      element: document.querySelector(".header-container"),
-    });
+  appEl.innerHTML = appHtml;
 
   
+  const uploadContainerElement = document.getElementById("upload-image-container");
+  if (uploadContainerElement) {
     renderUploadImageComponent({
-      element: document.getElementById("upload-image-conrainer"),
-      onImageUpload: (imageFile) => {
-        document.getElementById("add-button").setAttribute("disabled", true);
-        
-        uploadImage({ file: imageFile })
-          .then(({ imageUrl: uploadedImageUrl }) => {
-            imageUrl = uploadedImageUrl;
-            document.getElementById("add-button").removeAttribute("disabled");
-          })
-          .catch((error) => {
-            console.error("Ошибка загрузки изображения:", error);
-            document.getElementById("form-error").textContent = "Ошибка загрузки изображения";
-            document.getElementById("add-button").removeAttribute("disabled");
-          });
+      element: uploadContainerElement, 
+      onImageUrlChange: (imageUrl) => {
+        console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
+        currentImageUrl = imageUrl;
       },
     });
+  } else {
+    console.error("AddPostComponent: Элемент 'upload-image-container' не найден в DOM.");
+  }
+
+  const addButton = document.getElementById("add-button");
+  const descriptionElement = document.getElementById("post-description");
+  const errorElement = document.getElementById("form-error");
 
  
-    document.getElementById("add-button").addEventListener("click", () => {
-      const description = document.getElementById("post-description").value;
-      
+  if (addButton && descriptionElement && errorElement) {
+    addButton.addEventListener("click", () => {
+      const description = descriptionElement.value;
+
      
+      errorElement.textContent = "";
+
+      
       if (!description.trim()) {
-        document.getElementById("form-error").textContent = "Введите описание поста";
+        errorElement.textContent = "Введите описание поста";
         return;
       }
-      
-      if (!imageUrl) {
-        document.getElementById("form-error").textContent = "Загрузите изображение";
+
+      if (!currentImageUrl) {
+        errorElement.textContent = "Загрузите изображение";
         return;
       }
-      
+
    
+      const token = getToken();
+      if (!token) {
+        errorElement.textContent = "Ошибка авторизации. Пожалуйста, войдите снова.";
+        console.warn("AddPostComponent: Попытка добавить пост без токена.");
+      
+        return;
+      }
+
+      console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description, imageUrl: currentImageUrl });
+
+
       onAddPostClick({
         description: description.trim(),
-        imageUrl,
+        imageUrl: currentImageUrl,
       });
     });
-  };
-
-  render();
+  } else {
+    console.error("AddPostComponent: Один или несколько необходимых элементов форм не найдены.");
+  }
 }

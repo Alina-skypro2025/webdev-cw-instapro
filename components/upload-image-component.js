@@ -1,80 +1,117 @@
+
 import { uploadImage } from "../api.js";
 
-/**
- * Компонент загрузки изображения.
- * Этот компонент позволяет пользователю загружать изображение и отображать его превью.
- * Если изображение уже загружено, пользователь может заменить его.
- *
- * @param {HTMLElement} params.element - HTML-элемент, в который будет рендериться компонент.
- * @param {Function} params.onImageUrlChange - Функция, вызываемая при изменении URL изображения.
- *                                            Принимает один аргумент - новый URL изображения или пустую строку.
- */
+
 export function renderUploadImageComponent({ element, onImageUrlChange }) {
-  /**
-   * URL текущего изображения.
-   * Изначально пуст, пока пользователь не загрузит изображение.
-   * @type {string}
-   */
+ 
+  if (!element) {
+    console.error("UploadImageComponent: Не передан DOM-элемент для рендеринга.");
+    return;
+  }
+
   let imageUrl = "";
 
-  /**
-   * Функция рендеринга компонента.
-   * Отображает интерфейс компонента в зависимости от состояния: 
-   * либо форма выбора файла, либо превью загруженного изображения с кнопкой замены.
-   */
   const render = () => {
-    element.innerHTML = `
+    const html = `
       <div class="upload-image">
-        ${
-          imageUrl
-            ? `
-            <div class="file-upload-image-container">
-              <img class="file-upload-image" src="${imageUrl}" alt="Загруженное изображение">
-              <button class="file-upload-remove-button button">Заменить фото</button>
-            </div>
-            `
-            : `
-            <label class="file-upload-label secondary-button">
-              <input
-                type="file"
-                class="file-upload-input"
-                style="display:none"
-              />
-              Выберите фото
-            </label>
+        ${imageUrl
+        ? `
+          <div class="file-upload-image-container">
+            <img class="file-upload-image" src="${imageUrl}" alt="Загруженное изображение">
+            <button class="file-upload-remove-button button">Заменить фото</button>
+          </div>
           `
-        }
+        : `
+          <label class="file-upload-label secondary-button">
+            <input type="file" class="file-upload-input" accept="image/*" style="display:none">
+            Выберите фото
+          </label>
+          `}
       </div>
     `;
 
-    // Обработчик выбора файла
-    const fileInputElement = element.querySelector(".file-upload-input");
-    fileInputElement?.addEventListener("change", () => {
-      const file = fileInputElement.files[0];
-      if (file) {
-        const labelEl = document.querySelector(".file-upload-label");
-        labelEl.setAttribute("disabled", true);
-        labelEl.textContent = "Загружаю файл...";
-        
-        // Загружаем изображение с помощью API
-        uploadImage({ file }).then(({ fileUrl }) => {
-          imageUrl = fileUrl; // Сохраняем URL загруженного изображения
-          onImageUrlChange(imageUrl); // Уведомляем о изменении URL изображения
-          render(); // Перерисовываем компонент с новым состоянием
-        });
-      }
-    });
+    element.innerHTML = html;
 
-    // Обработчик удаления изображения
-    element
-      .querySelector(".file-upload-remove-button")
-      ?.addEventListener("click", () => {
-        imageUrl = ""; // Сбрасываем URL изображения
-        onImageUrlChange(imageUrl); // Уведомляем об изменении URL изображения
-        render(); // Перерисовываем компонент
+    const fileInput = element.querySelector(".file-upload-input");
+    if (fileInput) {
+    
+      fileInput.addEventListener("change", async (event) => {
+        
+        const files = event.target.files;
+        if (files && files.length > 0) {
+          const file = files[0];
+          const label = element.querySelector(".file-upload-label");
+          if (label) {
+            label.setAttribute("disabled", "true");
+            label.textContent = "Загрузка...";
+          }
+
+          try {
+            console.log("UploadComponent: Начинаем загрузку файла:", file.name);
+            const uploadResult = await uploadImage({ file });
+            console.log("UploadComponent: Ответ от uploadImage:", uploadResult);
+
+            
+            if (uploadResult && typeof uploadResult === 'object' && uploadResult.fileUrl) {
+              imageUrl = uploadResult.fileUrl; 
+            } else {
+              
+              imageUrl = uploadResult?.imageUrl || uploadResult?.url || "";
+          
+              if (!imageUrl) {
+                 console.warn("UploadComponent: URL изображения не найден в ответе API.", uploadResult);
+                 throw new Error("URL изображения отсутствует в ответе сервера.");
+              }
+            }
+            console.log("UploadComponent: Извлеченный imageUrl:", imageUrl);
+
+          
+            if (typeof onImageUrlChange === 'function') {
+              onImageUrlChange(imageUrl);
+            } else {
+              console.warn("UploadComponent: onImageUrlChange не является функцией.");
+            }
+
+            render();
+          } catch (error) {
+            console.error("UploadComponent: Ошибка загрузки:", error);
+
+           
+            if (typeof onImageUrlChange === 'function') {
+              onImageUrlChange(""); 
+            }
+
+            const label = element.querySelector(".file-upload-label");
+            if (label) {
+              label.removeAttribute("disabled");
+              label.textContent = "Ошибка загрузки";
+
+             
+              setTimeout(() => {
+               
+                const currentLabel = element.querySelector(".file-upload-label");
+                if (currentLabel) {
+                  currentLabel.textContent = "Выберите фото";
+                }
+              }, 2000);
+            }
+          }
+        }
       });
+    }
+
+    const removeButton = element.querySelector(".file-upload-remove-button");
+    if (removeButton) {
+      removeButton.addEventListener("click", () => {
+        imageUrl = "";
+      
+        if (typeof onImageUrlChange === 'function') {
+          onImageUrlChange(imageUrl);
+        }
+        render();
+      });
+    }
   };
 
-  // Инициализация компонента
   render();
 }

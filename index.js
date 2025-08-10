@@ -1,8 +1,9 @@
-import { 
-  getPosts, 
-  addPost, 
-  getUserPosts, 
-  likePost, 
+
+import {
+  getPosts,
+  addPost,
+  getUserPosts,
+  likePost,
   dislikePost,
   uploadImage
 } from "./api.js";
@@ -27,10 +28,14 @@ export let user = getUserFromLocalStorage();
 export let page = null;
 export let posts = [];
 
-const getToken = () => {
+
+export const getToken = () => {
+  
   const token = user ? `Bearer ${user.token}` : undefined;
+  console.log("Index: Полученный токен:", token);
   return token;
 };
+
 
 export const logout = () => {
   user = null;
@@ -42,7 +47,7 @@ export const logout = () => {
 const smoothPageTransition = (callback) => {
   const appEl = document.getElementById("app");
   const container = appEl.querySelector('.page-container');
-  
+
   if (container) {
     container.classList.remove('active');
     setTimeout(() => {
@@ -64,6 +69,7 @@ const smoothPageTransition = (callback) => {
 
 
 export const goToPage = (newPage, data) => {
+  
   if (
     [
       POSTS_PAGE,
@@ -73,8 +79,9 @@ export const goToPage = (newPage, data) => {
       LOADING_PAGE,
     ].includes(newPage)
   ) {
+    
     if (newPage === ADD_POSTS_PAGE) {
-   
+    
       page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
       return renderApp();
     }
@@ -83,16 +90,19 @@ export const goToPage = (newPage, data) => {
       page = LOADING_PAGE;
       renderApp();
 
-      return getPosts({ token: getToken() })
+      return getPosts({ token: getToken() }) 
         .then((newPosts) => {
-          console.log("Посты из API:", newPosts);
+          console.log("Index: Получены посты:", newPosts);
           page = POSTS_PAGE;
           posts = newPosts;
           renderApp();
         })
         .catch((error) => {
-          console.error(error);
-          goToPage(POSTS_PAGE);
+          console.error("Index: Ошибка получения постов:", error);
+         
+          alert("Не удалось получить посты: " + error.message);
+          page = POSTS_PAGE; 
+          renderApp();
         });
     }
 
@@ -100,18 +110,25 @@ export const goToPage = (newPage, data) => {
       page = LOADING_PAGE;
       renderApp();
 
-      return getUserPosts({ token: getToken(), userId: data.userId })
+     
+      return getUserPosts({ token: getToken(), userId: data?.userId })
         .then((userPosts) => {
+          console.log("Index: Получены посты пользователя:", userPosts);
           page = USER_POSTS_PAGE;
           posts = userPosts;
           renderApp();
         })
         .catch((error) => {
-          console.error(error);
-          goToPage(POSTS_PAGE);
+          console.error("Index: Ошибка получения постов пользователя:", error);
+       
+          alert("Не удалось получить посты пользователя: " + error.message);
+          
+          page = POSTS_PAGE;
+          renderApp();
         });
     }
 
+    
     page = newPage;
     renderApp();
 
@@ -124,32 +141,72 @@ export const goToPage = (newPage, data) => {
 
 export const toggleLike = (postId, isLiked) => {
   const token = getToken();
+
+  
   if (!token) {
-    smoothPageTransition(() => goToPage(AUTH_PAGE));
+    console.log("Index: Попытка лайка без авторизации, перенаправляем на AUTH_PAGE");
+    const appEl = document.getElementById("app");
+    const container = appEl.querySelector('.page-container');
+
+    if (container) {
+      container.classList.remove('active');
+      setTimeout(() => {
+        goToPage(AUTH_PAGE);
+      }, 300);
+    } else {
+      goToPage(AUTH_PAGE);
+    }
     return Promise.resolve();
   }
 
   const likePromise = isLiked ? dislikePost : likePost;
-  
+
   return likePromise({ token, postId })
     .then((responseData) => {
-      
+      console.log("Index: Лайк/дизлайк успешен:", responseData);
       const postIndex = posts.findIndex(post => post.id === postId);
       if (postIndex !== -1) {
+        
         posts[postIndex] = responseData.post;
+       
+        updatePostInDOM(postId, responseData.post);
       }
-      
-    
-      renderApp();
     })
     .catch((error) => {
-      console.error("Ошибка при работе с лайком:", error);
+      console.error("Index: Ошибка при работе с лайком:", error);
       alert("Не удалось выполнить действие: " + error.message);
     });
 };
 
+
+function updatePostInDOM(postId, updatedPost) {
+ 
+  const postElement = document.querySelector(`.like-button[data-post-id="${postId}"]`);
+  if (postElement) {
+    const likeImage = postElement.querySelector('img');
+    
+    const newLikeImage = updatedPost.isLiked
+      ? "./assets/images/like-active.svg"
+      : "./assets/images/like-not-active.svg";
+    if (likeImage) {
+      likeImage.src = newLikeImage;
+    }
+
+    
+    const likesCountElement = postElement.closest('.post-likes')?.querySelector('.post-likes-text strong');
+    if (likesCountElement) {
+      likesCountElement.textContent = updatedPost.likes.length;
+    }
+
+    
+    postElement.dataset.isLiked = updatedPost.isLiked;
+  }
+}
+
+
 const renderApp = () => {
   const appEl = document.getElementById("app");
+
   if (page === LOADING_PAGE) {
     return renderLoadingPageComponent({
       appEl,
@@ -162,8 +219,10 @@ const renderApp = () => {
     return renderAuthPageComponent({
       appEl,
       setUser: (newUser) => {
+        console.log("Index: Установка нового пользователя:", newUser);
         user = newUser;
         saveUserToLocalStorage(user);
+     
         smoothPageTransition(() => goToPage(POSTS_PAGE));
       },
       user,
@@ -172,34 +231,46 @@ const renderApp = () => {
   }
 
   if (page === ADD_POSTS_PAGE) {
+    
+    if (!user) {
+      console.log("Index: Попытка доступа к ADD_POSTS_PAGE без авторизации");
+      goToPage(AUTH_PAGE);
+      return;
+    }
+
     return renderAddPostPageComponent({
       appEl,
-      onAddPostClick({ description, imageUrl }) {
+      
+      onAddPostClick: ({ description, imageUrl }) => {
         const token = getToken();
+        console.log("Index: onAddPostClick вызван с данными:", { description, imageUrl });
+
         if (!token) {
+          console.log("Index: Нет токена при попытке добавить пост");
+         
           smoothPageTransition(() => goToPage(AUTH_PAGE));
           return;
         }
-        
-     
+
         if (!description.trim()) {
           alert("Введите описание поста");
           return;
         }
-        
+
         if (!imageUrl) {
           alert("Загрузите изображение");
           return;
         }
-        
-      
+
+       
         addPost({ token, description, imageUrl })
-          .then(() => {
-          
+          .then((result) => {
+            console.log("Index: Пост успешно добавлен:", result);
+           
             smoothPageTransition(() => goToPage(POSTS_PAGE));
           })
           .catch((error) => {
-            console.error("Ошибка при добавлении поста:", error);
+            console.error("Index: Ошибка при добавлении поста:", error);
             alert("Не удалось добавить пост: " + error.message);
           });
       },
