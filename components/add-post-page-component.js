@@ -1,6 +1,6 @@
-
 import { addPost } from "./api.js";
 import { renderUploadImageComponent } from "./upload-image-component.js";
+import { getToken } from "../index.js"; 
 
 export function renderAddPostPageComponent({ appEl, onPostAdded }) {
   let currentImageUrl = "";
@@ -50,7 +50,14 @@ export function renderAddPostPageComponent({ appEl, onPostAdded }) {
         return;
       }
 
-      await addPost({ description, imageUrl: currentImageUrl });
+      
+      const token = getToken();
+      if (!token) {
+        alert("Ошибка авторизации. Пожалуйста, войдите снова.");
+        return;
+      }
+
+      await addPost({ token, description, imageUrl: currentImageUrl });
       onPostAdded?.();
     } catch (e) {
       console.error(e);
