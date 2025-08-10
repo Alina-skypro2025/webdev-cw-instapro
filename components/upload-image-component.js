@@ -1,30 +1,85 @@
+import { uploadImage } from "../api.js";
 
-export function renderUploadImageComponent({ elementId, onImageUrl }) {
-  const root = document.getElementById(elementId);
-  root.innerHTML = `
-    <label class="file">
-      <input type="file" id="file-input" accept="image/*" />
-      <span>Загрузить фото</span>
-    </label>
-    <div id="preview" class="upload-preview"></div>
-  `;
+export function renderUploadImageComponent({ element, onImageUrlChange }) {
+  let imageUrl = "";
 
-  const input = root.querySelector("#file-input");
-  const preview = root.querySelector("#preview");
+  const render = () => {
+    const html = `
+      <div class="upload-image">
+        ${imageUrl
+          ? `
+          <div class="file-upload-image-container">
+            <img class="file-upload-image" src="${imageUrl}" alt="Загруженное изображение">
+            <button class="file-upload-remove-button button">Заменить фото</button>
+          </div>
+          `
+          : `
+          <label class="file-upload-label secondary-button">
+            <input type="file" class="file-upload-input" accept="image/*" style="display:none">
+            Выберите фото
+          </label>
+          `}
+      </div>
+    `;
+    
+    element.innerHTML = html;
 
-  input.addEventListener("change", async () => {
-    const file = input.files?.[0];
-    if (!file) return;
+    const fileInput = element.querySelector(".file-upload-input");
+    if (fileInput) {
+      fileInput.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const label = element.querySelector(".file-upload-label");
+          if (label) {
+            label.setAttribute("disabled", "true");
+            label.textContent = "Загрузка...";
+          }
 
- 
-    const { fileUrl } = await uploadToCloud(file);
-    preview.innerHTML = <img src="${fileUrl}" alt="" style="max-width:100%;border-radius:12px;">;
-    onImageUrl(fileUrl);
-  });
-}
+          try {
+            console.log("Начинаем загрузку файла:", file.name);
+            const uploadResult = await uploadImage({ file });
+            
+            imageUrl = uploadResult.fileUrl || uploadResult.imageUrl || uploadResult.url || "";
+            
+            if (typeof onImageUrlChange === 'function') {
+              onImageUrlChange(imageUrl);
+            }
+            
+            render();
+          } catch (error) {
+            console.error("Ошибка загрузки:", error);
+            
+            if (typeof onImageUrlChange === 'function') {
+              onImageUrlChange("");
+            }
+            
+            const label = element.querySelector(".file-upload-label");
+            if (label) {
+              label.removeAttribute("disabled");
+              label.textContent = "Ошибка загрузки";
+              
+              setTimeout(() => {
+                if (element.querySelector(".file-upload-label")) {
+                  element.querySelector(".file-upload-label").textContent = "Выберите фото";
+                }
+              }, 2000);
+            }
+          }
+        }
+      });
+    }
 
+    const removeButton = element.querySelector(".file-upload-remove-button");
+    if (removeButton) {
+      removeButton.addEventListener("click", () => {
+        imageUrl = "";
+        if (typeof onImageUrlChange === 'function') {
+          onImageUrlChange(imageUrl);
+        }
+        render();
+      });
+    }
+  };
 
-async function uploadToCloud(file) {
- 
-  return { fileUrl: URL.createObjectURL(file) };
+  render();
 }
