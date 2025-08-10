@@ -1,12 +1,16 @@
+
 const personalKey = "prod";
-const baseHost = "https://webdev-hw-api.vercel.app";
+
+const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
+
 
 export function getPosts({ token }) {
   const headers = {
     "Content-Type": "application/json",
   };
-  
+
+
   if (token) {
     headers.Authorization = token;
   }
@@ -16,12 +20,16 @@ export function getPosts({ token }) {
     headers,
   })
     .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       return response.json();
     })
     .then((data) => {
       return data.posts;
     });
 }
+
 
 export function registerUser({ login, password, name, imageUrl }) {
   return fetch(baseHost + "/api/user", {
@@ -46,6 +54,7 @@ export function registerUser({ login, password, name, imageUrl }) {
   });
 }
 
+
 export function loginUser({ login, password }) {
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
@@ -67,6 +76,7 @@ export function loginUser({ login, password }) {
   });
 }
 
+
 export function uploadImage({ file }) {
   const data = new FormData();
   data.append("file", file);
@@ -83,10 +93,15 @@ export function uploadImage({ file }) {
     });
 }
 
+
 export function addPost({ token, description, imageUrl }) {
-  return fetch(`${baseHost}/api/v1/${personalKey}/instapro`, {
+
+  console.log("API: Отправляем данные на сервер:", { description, imageUrl });
+
+  return fetch(postsHost, {
     method: "POST",
     headers: {
+     
       Authorization: token,
       "Content-Type": "application/json",
     },
@@ -99,7 +114,11 @@ export function addPost({ token, description, imageUrl }) {
       throw new Error("Нет авторизации");
     }
     if (response.status === 400) {
-      throw new Error("Не переданы обязательные данные");
+      
+      return response.json().then((errorData) => {
+        console.error("API: Ошибка 400 от сервера:", errorData);
+        throw new Error(errorData?.error || "Не переданы обязательные данные");
+      });
     }
     if (!response.ok) {
       throw new Error("Ошибка при добавлении поста");
@@ -108,11 +127,13 @@ export function addPost({ token, description, imageUrl }) {
   });
 }
 
+
 export function getUserPosts({ token, userId }) {
   const headers = {
     "Content-Type": "application/json",
   };
-  
+
+ 
   if (token) {
     headers.Authorization = token;
   }
@@ -122,12 +143,16 @@ export function getUserPosts({ token, userId }) {
     headers,
   })
     .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       return response.json();
     })
     .then((data) => {
       return data.posts;
     });
 }
+
 
 export function likePost({ token, postId }) {
   return fetch(`${postsHost}/${postId}/like`, {
@@ -145,6 +170,7 @@ export function likePost({ token, postId }) {
     return response.json();
   });
 }
+
 
 export function dislikePost({ token, postId }) {
   return fetch(`${postsHost}/${postId}/dislike`, {
