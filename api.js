@@ -55,19 +55,18 @@ export function registerUser({ login, password, name, imageUrl }) {
 }
 
 
+
 export function loginUser({ login, password }) {
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+  
+    headers: {},
     body: JSON.stringify({
       login,
       password,
     }),
   }).then((response) => {
     if (response.status === 400) {
-      
       return response.json().then((errorData) => {
          throw new Error(errorData?.error || "Неверный логин или пароль");
       });
