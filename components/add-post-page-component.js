@@ -1,9 +1,11 @@
+
+import { addPost } from "./api.js";
 import { renderUploadImageComponent } from "./upload-image-component.js";
 
-export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
+export function renderAddPostPageComponent({ appEl, onPostAdded }) {
   let currentImageUrl = "";
 
-  const appHtml = `
+  appEl.innerHTML = `
     <div class="page-container">
       <div class="header-container"></div>
       <div class="form">
@@ -14,52 +16,49 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
           </div>
           <label>
             Описание поста
-            <textarea class="form-textarea" id="post-description"></textarea>
+            <textarea class="form-textarea" id="post-description" rows="4" placeholder="Подпись к фото..."></textarea>
           </label>
-          <div class="form-error" id="form-error"></div>
-        </div>
-        <div class="form-footer">
-          <button class="button" id="add-button">Добавить</button>
+          <div class="form-actions">
+            <button class="button" id="add-button">Опубликовать</button>
+            <button class="button button-secondary" id="cancel-button">Отмена</button>
+          </div>
         </div>
       </div>
     </div>
   `;
 
-  appEl.innerHTML = appHtml;
-
   renderUploadImageComponent({
-    element: document.getElementById("upload-image-container"),
-    onImageUrlChange: (imageUrl) => {
-      currentImageUrl = imageUrl;
+    elementId: "upload-image-container",
+    onImageUrl: (url) => {
+      currentImageUrl = url;
+      console.log("Готовим данные:", { description: getDesc(), imageUrl: currentImageUrl });
     },
   });
 
-  const addButton = document.getElementById("add-button");
-  const descriptionElement = document.getElementById("post-description");
-  const errorElement = document.getElementById("form-error");
+  const getDesc = () => (document.getElementById("post-description").value || "").trim();
 
-  if (addButton && descriptionElement && errorElement) {
-    addButton.addEventListener("click", () => {
-      const description = descriptionElement.value.trim();
-
-     
-      errorElement.textContent = "";
-
-      
-      if (!description) {
-        errorElement.textContent = "Введите описание поста";
-        return;
-      }
+  document.getElementById("add-button").addEventListener("click", async () => {
+    try {
+      const description = getDesc();
 
       if (!currentImageUrl) {
-        errorElement.textContent = "Загрузите изображение";
+        alert("Сначала загрузите изображение.");
+        return;
+      }
+      if (!description) {
+        alert("Напишите описание.");
         return;
       }
 
-      onAddPostClick({
-        description,
-        imageUrl: currentImageUrl,
-      });
-    });
-  }
+      await addPost({ description, imageUrl: currentImageUrl });
+      onPostAdded?.();
+    } catch (e) {
+      console.error(e);
+      alert(e.message || "Ошибка при добавлении поста");
+    }
+  });
+
+  document.getElementById("cancel-button").addEventListener("click", () => {
+    history.back();
+  });
 }
