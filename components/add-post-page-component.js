@@ -10,7 +10,7 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
         <h3 class="form-title">Добавить пост</h3>
         <div class="form-inputs">
           <div class="upload-image-container">
-            <div id="upload-image-conrainer"></div>
+            <div id="upload-image-container"></div>
           </div>
           <label>
             Описание поста
@@ -28,34 +28,36 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
   appEl.innerHTML = appHtml;
 
   renderUploadImageComponent({
-    element: document.getElementById("upload-image-conrainer"),
+    element: document.getElementById("upload-image-container"),
     onImageUrlChange: (imageUrl) => {
-      console.log("URL изображения обновлен:", imageUrl);
       currentImageUrl = imageUrl;
     },
   });
 
   const addButton = document.getElementById("add-button");
-  if (addButton) {
+  const descriptionElement = document.getElementById("post-description");
+  const errorElement = document.getElementById("form-error");
+
+  if (addButton && descriptionElement && errorElement) {
     addButton.addEventListener("click", () => {
-      const description = document.getElementById("post-description").value.trim();
+      const description = descriptionElement.value;
 
-      console.log("Попытка добавить пост:", { description, imageUrl: currentImageUrl });
+      
+      errorElement.textContent = "";
 
-      if (!description) {
-        document.getElementById("form-error").textContent = "Введите описание поста";
+     
+      if (!description.trim()) {
+        errorElement.textContent = "Введите описание поста";
         return;
       }
 
       if (!currentImageUrl) {
-        document.getElementById("form-error").textContent = "Загрузите изображение";
+        errorElement.textContent = "Загрузите изображение";
         return;
       }
 
-      document.getElementById("form-error").textContent = "";
-
       onAddPostClick({
-        description,
+        description: description.trim(),
         imageUrl: currentImageUrl,
       });
     });
