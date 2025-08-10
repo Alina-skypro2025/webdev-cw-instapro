@@ -3,7 +3,6 @@ import { renderUploadImageComponent } from "./upload-image-component.js";
 
 import { getToken } from "../index.js";
 
-import { addPost } from "../api.js";
 
 
 export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
@@ -33,18 +32,25 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
 
   appEl.innerHTML = appHtml;
 
-  renderUploadImageComponent({
-    element: document.getElementById("upload-image-container"),
-    onImageUrlChange: (imageUrl) => {
-      console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
-      currentImageUrl = imageUrl;
-    },
-  });
+  
+  const uploadContainerElement = document.getElementById("upload-image-container");
+  if (uploadContainerElement) {
+    renderUploadImageComponent({
+      element: uploadContainerElement, 
+      onImageUrlChange: (imageUrl) => {
+        console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
+        currentImageUrl = imageUrl;
+      },
+    });
+  } else {
+    console.error("AddPostComponent: Элемент 'upload-image-container' не найден в DOM.");
+  }
 
   const addButton = document.getElementById("add-button");
   const descriptionElement = document.getElementById("post-description");
   const errorElement = document.getElementById("form-error");
 
+ 
   if (addButton && descriptionElement && errorElement) {
     addButton.addEventListener("click", () => {
       const description = descriptionElement.value;
@@ -52,7 +58,7 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
      
       errorElement.textContent = "";
 
-     
+      
       if (!description.trim()) {
         errorElement.textContent = "Введите описание поста";
         return;
@@ -63,21 +69,24 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
         return;
       }
 
-     
+   
       const token = getToken();
       if (!token) {
         errorElement.textContent = "Ошибка авторизации. Пожалуйста, войдите снова.";
-        console.log("AddPostComponent: Нет токена для добавления поста");
+        console.warn("AddPostComponent: Попытка добавить пост без токена.");
+      
         return;
       }
 
       console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description, imageUrl: currentImageUrl });
 
-    
+
       onAddPostClick({
         description: description.trim(),
         imageUrl: currentImageUrl,
       });
     });
+  } else {
+    console.error("AddPostComponent: Один или несколько необходимых элементов форм не найдены.");
   }
 }
