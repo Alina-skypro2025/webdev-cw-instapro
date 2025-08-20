@@ -1,125 +1,159 @@
-
 const personalKey = "prod";
-const baseHost = "https://wedev-api.sky.pro"; // Исправлено: Убраны пробелы
+const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
-/**
- * Получить список всех постов.
- * @param {Object} params
- * @param {string} [params.token] - Токен авторизации (для получения состояния isLiked).
- * @returns {Promise<Array>} - Массив постов.
- */
-export function getPosts({ token }) {
-  const headers = {};
-
-  
-  if (token) {
-    headers.Authorization = token;
-  }
-
-  return fetch(postsHost, {
-    method: "GET",
-    headers,
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      return data.posts;
+function checkResponse(response) {
+  if (!response.ok) {
+    return response.text().then((text) => {
+      throw new Error(`Ошибка сервера: ${response.status} ${text}`);
     });
-}
-
-/**
- * Получить посты конкретного пользователя.
- * @param {Object} params
- * @param {string} [params.token] - Токен авторизации (для получения состояния isLiked).
- * @param {string} params.userId - ID пользователя.
- * @returns {Promise<Array>} - Массив постов пользователя.
- */
-export function getUserPosts({ token, userId }) {
-  const headers = {};
-
-
-  if (token) {
-    headers.Authorization = token;
   }
+  return response.json();
+}
 
-  return fetch(`${postsHost}/user-posts/${userId}`, {
-    method: "GET",
-    headers,
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      return data.posts;
+export async function getPosts({ token }) {
+  try {
+    const headers =
+      token && token !== "Bearer undefined" ? { Authorization: token } : {};
+    const response = await fetch(postsHost, { method: "GET", headers });
+    const data = await checkResponse(response);
+    if (response.status === 401) throw new Error("Нет авторизации");
+    return data.posts;
+  } catch (error) {
+    throw new Error(`Failed to fetch posts: ${error.message}`);
+  }
+}
+
+export async function getUserPosts({ token, userId }) {
+  try {
+    const headers =
+      token && token !== "Bearer undefined" ? { Authorization: token } : {};
+    const response = await fetch(`${postsHost}/user-posts/${userId}`, {
+      method: "GET",
+      headers,
     });
+    const data = await checkResponse(response);
+    if (response.status === 401) throw new Error("Нет авторизации");
+    return data.posts;
+  } catch (error) {
+    throw new Error(`Failed to fetch user posts: ${error.message}`);
+  }
 }
 
-/**
- * Регистрация нового пользователя.
- * @param {Object} params
- * @param {string} params.login
- * @param {string} params.password
- * @param {string} params.name
- * @param {string} params.imageUrl
- * @returns {Promise<Object>} - Данные нового пользователя.
- */
-export function registerUser({ login, password, name, imageUrl }) {
-  return fetch(baseHost + "/api/user", {
-    method: "POST",
-    
-    headers: {},
-    body: JSON.stringify({
-      login,
-      password,
-      name,
-      imageUrl,
-    }),
-  }).then((response) => {
-    if (response.status === 400) {
-      return response.json().then((errorData) => {
-         throw new Error(errorData?.error || "Такой пользователь уже существует");
-      });
-    }
-    if (!response.ok) {
-      throw new Error("Ошибка при регистрации");
-    }
-    return response.json();
-  });
+export async function addPost({ token, description, imageUrl }) {
+  try {
+    if (!description || !imageUrl)
+      throw new Error("Описание или URL изображения не переданы");
+    const response = await fetch(postsHost, {
+      method: "POST",
+      headers: { Authorization: token },
+      body: JSON.stringify({ description, imageUrl }),
+    });
+    const data = await checkResponse(response);
+    if (response.status === 400)
+      throw new Error(data.error || "Некорректные данные поста");
+    if (response.status === 401) throw new Error("Нет авторизации");
+    return data;
+  } catch (error) {
+    throw new Error(`Failed to add post: ${error.message}`);
+  }
 }
 
-/**
- * Авторизация пользователя.
- * @param {Object} params
- * @param {string} params.login
- * @param {string} params.password
- * @returns {Promise<Object>} - Данные авторизованного пользователя.
- */
-export function loginUser({ login, password }) {
-  return fetch(baseHost + "/api/user/login", {
+export async function likePost({ token, postId }) {
+  try {
+    const response = await fetch(`${postsHost}/${postId}/like`, {
+      method: "POST",
+      headers: { Authorization: token },
+    });
+    const data = await checkResponse(response);
+    if (response.status === 401) throw new Error("Нет авторизации");
+    return data;
+  } catch (error) {
+    throw new Error(`Failed to like post: ${error.message}`);
+  }
+}
+
+export async function dislikePost({ token, postId }) {
+  try {
+    const response = await fetch(`${postsHost}/${postId}/dislike`, {
+      method: "POST",
+      headers: { Authorization: token },
+    });
+    const data = await checkResponse(response);
+    if (response.status === 401) throw new Error("Нет авторизации");
+    return data;
+  } catch (error) {
+    throw new Error(`Failed to dislike post: ${error.message}`);
+  }
+}
+
+export async function registerUser({ login, password, name, imageUrl }) {
+  const body = { login, password, name };
+  if (imageUrl) body.imageUrl = imageUrl;
+  console.log("Register request body:", body); // Логирование для отладки
+  const response = await fetch(`${baseHost}/api/user`, {
     method: "POST",
- 
-    headers: {},
-    body: JSON.stringify({
-      login,
-      password,
-    }),
-  }).then((response) => {
-    if (response.status === 400) {
-      return response.json().then((errorData) => {
-         throw new Error(errorData?.error || "Неверный логин или пароль");
-      });
-    }
-    if (!response.ok) {
-      throw new Error("Ошибка при входе");
-    }
-    return response.json();
+    body: JSON.stringify(body),
   });
+
+  if (response.status === 400) {
+    const data = await response.json();
+    throw new Error(data.error || "Некорректные данные регистрации");
+  }
+  return response.json();
+}
+
+export async function loginUser({ login, password }) {
+  const response = await fetch(`${baseHost}/api/user/login`, {
+    method: "POST",
+    body: JSON.stringify({ login, password }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.error || "Неверный логин или пароль");
+  }
+  return response.json();
+}
+
+export async function uploadImage({ file }) {
+  try {
+    const data = new FormData();
+    data.append("file", file);
+    const response = await fetch(`${baseHost}/api/upload/image`, {
+      method: "POST",
+      body: data,
+    });
+    const result = await checkResponse(response);
+    if (response.status === 400)
+      throw new Error(result.error || "Некорректный файл изображения");
+    if (response.status !== 200) throw new Error("Ошибка загрузки изображения");
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to upload image: ${error.message}`);
+  }
+}
+
+export async function verifyToken({ token }) {
+  try {
+    const headers = { Authorization: token };
+    const response = await fetch(postsHost, { method: "GET", headers });
+    return response.status === 200;
+  } catch (error) {
+    console.error("verifyToken error:", error);
+    return false;
+  }
+}
+
+export async function deletePost({ token, postId }) {
+  try {
+    const response = await fetch(`${postsHost}/${postId}`, {
+      method: "DELETE",
+      headers: { Authorization: token },
+    });
+    if (!response.ok) throw new Error(`Ошибка удаления: ${response.status}`);
+    return response.json();
+  } catch (error) {
+    throw new Error(`Failed to delete post: ${error.message}`);
+  }
 }
