@@ -1,4 +1,4 @@
-// api.js
+
 const personalKey = "prod";
 const baseHost = "https://wedev-api.sky.pro"; // Исправлено: Убраны пробелы
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
@@ -12,7 +12,7 @@ const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 export function getPosts({ token }) {
   const headers = {};
 
-  // Если токен предоставлен, добавляем его в заголовки
+  
   if (token) {
     headers.Authorization = token;
   }
@@ -42,7 +42,7 @@ export function getPosts({ token }) {
 export function getUserPosts({ token, userId }) {
   const headers = {};
 
-  // Если токен предоставлен, добавляем его в заголовки
+
   if (token) {
     headers.Authorization = token;
   }
@@ -74,7 +74,7 @@ export function getUserPosts({ token, userId }) {
 export function registerUser({ login, password, name, imageUrl }) {
   return fetch(baseHost + "/api/user", {
     method: "POST",
-    // Убираем Content-Type: application/json
+    
     headers: {},
     body: JSON.stringify({
       login,
@@ -105,7 +105,7 @@ export function registerUser({ login, password, name, imageUrl }) {
 export function loginUser({ login, password }) {
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
-    // Убираем Content-Type: application/json
+ 
     headers: {},
     body: JSON.stringify({
       login,
@@ -119,114 +119,6 @@ export function loginUser({ login, password }) {
     }
     if (!response.ok) {
       throw new Error("Ошибка при входе");
-    }
-    return response.json();
-  });
-}
-
-/**
- * Добавление нового поста.
- * @param {Object} params
- * @param {string} params.token - Токен авторизации (обязательно).
- * @param {string} params.description - Описание поста.
- * @param {string} params.imageUrl - URL изображения.
- * @returns {Promise<Object>} - Результат операции.
- */
-export function addPost({ token, description, imageUrl }) {
-  console.log("API: Отправляем данные на сервер:", { description, imageUrl });
-
-  return fetch(postsHost, {
-    method: "POST",
-    headers: {
-      // Убираем Content-Type: application/json
-      Authorization: token,
-    },
-    body: JSON.stringify({
-      description: description || "",
-      imageUrl: imageUrl || "",
-    }),
-  }).then((response) => {
-    if (response.status === 401) {
-      throw new Error("Нет авторизации");
-    }
-    if (response.status === 400) {
-      return response.json().then((errorData) => {
-        console.error("API: Ошибка 400 от сервера:", errorData);
-        throw new Error(errorData?.error || "Не переданы обязательные данные");
-      });
-    }
-    if (!response.ok) {
-      throw new Error("Ошибка при добавлении поста");
-    }
-    return response.json();
-  });
-}
-
-/**
- * Загрузка изображения.
- * @param {Object} params
- * @param {File} params.file - Файл изображения.
- * @returns {Promise<Object>} - Данные загрузки (включая URL).
- */
-export function uploadImage({ file }) {
-  const data = new FormData();
-  data.append("file", file);
-
-  return fetch(baseHost + "/api/upload/image", {
-    method: "POST",
-    body: data,
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    });
-}
-
-/**
- * Поставить лайк посту.
- * @param {Object} params
- * @param {string} params.token - Токен авторизации (обязательно).
- * @param {string} params.postId - ID поста.
- * @returns {Promise<Object>} - Обновленный пост.
- */
-export function likePost({ token, postId }) {
-  return fetch(`${postsHost}/${postId}/like`, {
-    method: "POST",
-    headers: {
-      Authorization: token,
-    },
-  }).then((response) => {
-    if (response.status === 401) {
-      throw new Error("Нет авторизации");
-    }
-    if (!response.ok) {
-      throw new Error("Ошибка при лайке");
-    }
-    return response.json();
-  });
-}
-
-/**
- * Убрать лайк с поста.
- * @param {Object} params
- * @param {string} params.token - Токен авторизации (обязательно).
- * @param {string} params.postId - ID поста.
- * @returns {Promise<Object>} - Обновленный пост.
- */
-export function dislikePost({ token, postId }) {
-  return fetch(`${postsHost}/${postId}/dislike`, {
-    method: "POST",
-    headers: {
-      Authorization: token,
-    },
-  }).then((response) => {
-    if (response.status === 401) {
-      throw new Error("Нет авторизации");
-    }
-    if (!response.ok) {
-      throw new Error("Ошибка при дизлайке");
     }
     return response.json();
   });
