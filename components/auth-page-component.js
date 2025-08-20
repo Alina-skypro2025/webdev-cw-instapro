@@ -1,76 +1,151 @@
-// auth-page-component.js
 import { renderHeaderComponent } from "./header-component.js";
-import { getToken } from "../index.js";
-import { loginUser } from "../api.js";
+import { loginUser, registerUser, uploadImage } from "../api.js";
+import { showNotification } from "../index.js";
 
-export function renderAuthPageComponent({ appEl, setUser }) {
-  const appHtml = `
-    <div class="page-container">
-      <div class="header-container"></div>
-      <div class="form">
-        <h3 class="form-title">Вход в Instapro</h3>
-        <div class="form-inputs">
-          <label>
-            Логин
-            <input type="text" id="login-input" />
-          </label>
-          <label>
-            Пароль
-            <input type="password" id="password-input" />
-          </label>
-          <div class="form-error" id="form-error"></div>
+export function renderAuthPageComponent({ appEl, setUser, user, goToPage }) {
+  let isLoginMode = true;
+  let imageUrl = "";
+
+  const renderForm = () => {
+    const appHtml = `
+      <div class="page-container">
+        <div class="header-container"></div>
+        <div class="form ${isLoginMode ? 'form--login' : 'form--register'}">
+          <h3 class="form-title">${isLoginMode ? "Вход в Instapro" : "Регистрация в Instapro"}</h3>
+          <div class="form-inputs">
+            ${
+              !isLoginMode
+                ? `
+              <div class="form-field">
+                <label>Имя</label>
+                <input type="text" id="name-input" class="input" placeholder="Имя" />
+              </div>
+              <div class="form-field">
+                <label>Фото профиля</label>
+                <input type="file" id="image-input" class="input" accept="image/*" />
+              </div>
+            `
+                : ""
+            }
+            <div class="form-field">
+              <label>Логин</label>
+              <input type="text" id="login-input" class="input" placeholder="Логин" />
+            </div>
+            <div class="form-field">
+              <label>Пароль</label>
+              <input type="password" id="password-input" class="input" placeholder="Пароль" />
+            </div>
+            <div class="form-error"></div>
+            <button class="button" id="${isLoginMode ? "login-button" : "register-button"}">
+              ${isLoginMode ? "Войти" : "Зарегистрироваться"}
+            </button>
+          </div>
+          <div class="form-buttons">
+            <button class="button button--link" id="toggle-button">
+              ${isLoginMode ? "Зарегистрироваться" : "Войти"}
+            </button>
+          </div>
         </div>
-        <div class="form-footer">
-          <button class="button" id="login-button">Войти</button>
-        </div>
-      </div>
-    </div>
-  `;
+      </div>`;
+    appEl.innerHTML = appHtml;
 
-  appEl.innerHTML = appHtml;
-
-  renderHeaderComponent({
-    element: document.querySelector(".header-container"),
-    onLogout: () => {
-      console.log("AuthPageComponent: Пользователь вышел.");
-      setUser(null);
-    },
-  });
-
-  const loginButton = document.getElementById("login-button");
-  const loginInput = document.getElementById("login-input");
-  const passwordInput = document.getElementById("password-input");
-  const errorElement = document.getElementById("form-error");
-
-  if (loginButton && loginInput && passwordInput && errorElement) {
-    loginButton.addEventListener("click", () => {
-      const login = loginInput.value;
-      const password = passwordInput.value;
-
-      errorElement.textContent = ""; // Очищаем ошибку перед отправкой запроса
-
-      if (!login.trim()) {
-        errorElement.textContent = "Введите логин";
-        return;
-      }
-
-      if (!password.trim()) {
-        errorElement.textContent = "Введите пароль";
-        return;
-      }
-
-      loginUser({ login, password })
-        .then((userData) => {
-          console.log("AuthPageComponent: Получены данные пользователя:", userData);
-          setUser(userData.user);
-          alert("Успешная авторизация!");
-        })
-        .catch((error) => {
-          console.error("AuthPageComponent: Ошибка при авторизации:", error);
-          errorElement.textContent = error.message; // Отображаем ошибку только после получения ответа от сервера
-        });
+    renderHeaderComponent({
+      element: document.querySelector(".header-container"),
+      user,
+      goToPage,
     });
-  } else {
-    console.error("AuthPageComponent: Один или несколько необходимых элементов формы не найдены.");
-  }
+
+    const loginInput = document.getElementById("login-input");
+    const passwordInput = document.getElementById("password-input");
+    const nameInput = document.getElementById("name-input");
+    const imageInput = document.getElementById("image-input");
+    const loginButton = document.getElementById("login-button");
+    const registerButton = document.getElementById("register-button");
+    const toggleButton = document.getElementById("toggle-button");
+    const errorEl = document.querySelector(".form-error");
+
+    const setError = (message) => {
+      errorEl.textContent = message;
+    };
+
+    toggleButton.addEventListener("click", () => {
+      isLoginMode = !isLoginMode;
+      imageUrl = "";
+      setError("");
+      renderForm();
+    });
+
+    if (loginButton) {
+      loginButton.addEventListener("click", () => {
+        setError("");
+        const login = loginInput.value.trim();
+        const password = passwordInput.value.trim();
+        if (!login) return setError("Введите логин");
+        if (!password) return setError("Введите пароль");
+        loginButton.disabled = true;
+        loginUser({ login, password })
+          .then((userData) => {
+            if (!userData.user?.token) throw new Error("Токен не получен");
+            setUser(userData.user);
+          })
+          .catch((error) => {
+            setError(error.message);
+            showNotification(`Ошибка входа: ${error.message}`);
+          })
+          .finally(() => {
+            loginButton.disabled = false;
+          });
+      });
+    }
+
+    if (registerButton) {
+      registerButton.addEventListener("click", () => {
+        setError("");
+        const login = loginInput.value.trim();
+        const password = passwordInput.value.trim();
+        const name = nameInput.value.trim();
+        if (!login) return setError("Введите логин");
+        if (!password) return setError("Введите пароль");
+        if (!name) return setError("Введите имя");
+        registerButton.disabled = true;
+        registerUser({ login, password, name, imageUrl })
+          .then((userData) => {
+            if (!userData.user?.token) throw new Error("Токен не получен");
+            setUser(userData.user);
+            showNotification("Регистрация успешна!");
+          })
+          .catch((error) => {
+            setError(error.message);
+            showNotification(`Ошибка регистрации: ${error.message}`);
+          })
+          .finally(() => {
+            registerButton.disabled = false;
+          });
+      });
+    }
+
+    if (imageInput) {
+      imageInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          imageInput.disabled = true;
+          setError("Загрузка изображения...");
+          uploadImage({ file })
+            .then((data) => {
+              imageUrl = data.fileUrl;
+              setError("");
+              showNotification("Изображение загружено");
+            })
+            .catch((error) => {
+              setError(error.message);
+              showNotification(`Ошибка загрузки изображения: ${error.message}`);
+            })
+            .finally(() => {
+              imageInput.disabled = false;
+            });
+        }
+      });
+    }
+  };
+  renderForm();
 }
