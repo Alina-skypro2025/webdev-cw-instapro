@@ -1,91 +1,77 @@
-// add-post-page-component.js
+import { renderHeaderComponent } from "./header-component.js";
 import { renderUploadImageComponent } from "./upload-image-component.js";
-import { getToken } from "../index.js";
+import { addPost } from "../api.js";
+import { goToPage, user, showNotification } from "../index.js";
+import { POSTS_PAGE } from "../routes.js";
 
 export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
-  let currentImageUrl = "";
-
-  const appHtml = `
-    <div class="page-container">
-      <div class="header-container"></div>
-      <div class="form">
-        <h3 class="form-title">Добавить пост</h3>
-        <div class="form-inputs">
-          <div class="upload-image-container">
-            <div id="upload-image-container"></div>
+  const render = () => {
+    const appHtml = `
+      <div class="page-container">
+        <div class="header-container"></div>
+        <div class="form form--add-post">
+          <h3 class="form-title">Добавить пост</h3>
+          <div class="form-inputs">
+            <div class="upload-image-container"></div>
+            <div class="form-field">
+              <label>Описание поста</label>
+              <textarea id="description-input" class="textarea" placeholder="Введите описание поста"></textarea>
+            </div>
+            <div class="form-error"></div>
+            <button class="button" id="add-button">Добавить</button>
+            <div class="form-buttons">
+              <button class="button button--link" id="back-button">Назад</button>
+            </div>
           </div>
-          <label>
-            Описание поста
-            <textarea class="form-textarea" id="post-description"></textarea>
-          </label>
-          <div class="form-error" id="form-error"></div>
         </div>
-        <div class="form-footer">
-          <button class="button" id="add-button">Добавить</button>
-        </div>
-      </div>
-    </div>
-  `;
+      </div>`;
+    appEl.innerHTML = appHtml;
 
-  appEl.innerHTML = appHtml;
+    renderHeaderComponent({
+      element: document.querySelector(".header-container"),
+      user,
+      goToPage,
+    });
 
-  // Исправлено: Получаем элемент контейнера и передаем его в renderUploadImageComponent
-  const uploadContainerElement = document.getElementById("upload-image-container");
-  if (uploadContainerElement) {
+    const uploadImageContainer = appEl.querySelector(".upload-image-container");
+    let imageUrl = "";
     renderUploadImageComponent({
-      element: uploadContainerElement, // Передаем сам элемент
-      onImageUrlChange: (imageUrl) => {
-        console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
-        currentImageUrl = imageUrl;
+      element: uploadImageContainer,
+      onImageUrlChange: (newImageUrl) => {
+        imageUrl = newImageUrl;
       },
     });
-  } else {
-    console.error("AddPostComponent: Элемент 'upload-image-container' не найден в DOM.");
-  }
 
-  const addButton = document.getElementById("add-button");
-  const descriptionElement = document.getElementById("post-description");
-  const errorElement = document.getElementById("form-error");
+    const addButton = document.getElementById("add-button");
+    const backButton = document.getElementById("back-button");
+    const errorEl = document.querySelector(".form-error");
 
-  // Исправлено: Добавлена проверка существования элементов перед добавлением обработчиков
-  if (addButton && descriptionElement && errorElement) {
+    const setError = (message) => {
+      errorEl.textContent = message;
+    };
+
     addButton.addEventListener("click", () => {
-      const description = descriptionElement.value;
-
-      // Очищаем предыдущие ошибки
-      errorElement.textContent = "";
-
-      // Проверяем обязательные поля
-      if (!description.trim()) {
-        errorElement.textContent = "Введите описание поста";
+      const description = document
+        .getElementById("description-input")
+        .value.trim();
+      setError("");
+      if (!description) {
+        setError("Введите описание поста");
         return;
       }
-
-      if (!currentImageUrl) {
-        errorElement.textContent = "Загрузите изображение";
+      if (!imageUrl) {
+        setError("Выберите изображение");
         return;
       }
-
-      // Получаем токен (проверка наличия токена уже должна быть в index.js в onAddPostClick)
-      // Но всё равно делаем проверку для дополнительной безопасности на этом уровне
-      const token = getToken();
-      if (!token) {
-        errorElement.textContent = "Ошибка авторизации. Пожалуйста, войдите снова.";
-        console.warn("AddPostComponent: Попытка добавить пост без токена.");
-        // Здесь можно добавить перенаправление на страницу авторизации, если необходимо
-        // Например: import { goToPage, AUTH_PAGE } from "../routes.js"; goToPage(AUTH_PAGE);
-        return;
-      }
-
-      console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description, imageUrl: currentImageUrl });
-
-      // Вызываем переданную функцию обработки клика
-      onAddPostClick({
-        description: description.trim(),
-        imageUrl: currentImageUrl,
+      addButton.disabled = true;
+      onAddPostClick({ description, imageUrl }).finally(() => {
+        addButton.disabled = false;
       });
     });
-  } else {
-    console.error("AddPostComponent: Один или несколько необходимых элементов форм не найдены.");
-  }
+
+    backButton.addEventListener("click", () => {
+      goToPage(POSTS_PAGE);
+    });
+  };
+  render();
 }
