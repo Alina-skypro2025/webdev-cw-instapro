@@ -1,9 +1,6 @@
 
 import { renderUploadImageComponent } from "./upload-image-component.js";
-
 import { getToken } from "../index.js";
-
-
 
 export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
   let currentImageUrl = "";
@@ -50,43 +47,3 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
   const descriptionElement = document.getElementById("post-description");
   const errorElement = document.getElementById("form-error");
 
- 
-  if (addButton && descriptionElement && errorElement) {
-    addButton.addEventListener("click", () => {
-      const description = descriptionElement.value;
-
-     
-      errorElement.textContent = "";
-
-      
-      if (!description.trim()) {
-        errorElement.textContent = "Введите описание поста";
-        return;
-      }
-
-      if (!currentImageUrl) {
-        errorElement.textContent = "Загрузите изображение";
-        return;
-      }
-
-   
-      const token = getToken();
-      if (!token) {
-        errorElement.textContent = "Ошибка авторизации. Пожалуйста, войдите снова.";
-        console.warn("AddPostComponent: Попытка добавить пост без токена.");
-      
-        return;
-      }
-
-      console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description, imageUrl: currentImageUrl });
-
-
-      onAddPostClick({
-        description: description.trim(),
-        imageUrl: currentImageUrl,
-      });
-    });
-  } else {
-    console.error("AddPostComponent: Один или несколько необходимых элементов форм не найдены.");
-  }
-}
