@@ -1,11 +1,144 @@
+// api.js
+const personalKey = "prod";
+const baseHost = "https://wedev-api.sky.pro"; // Исправлено: Убраны пробелы
+const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
+/**
+ * Получить список всех постов.
+ * @param {Object} params
+ * @param {string} [params.token] - Токен авторизации (для получения состояния isLiked).
+ * @returns {Promise<Array>} - Массив постов.
+ */
+export function getPosts({ token }) {
+  const headers = {};
+
+  // Если токен предоставлен, добавляем его в заголовки
+  if (token) {
+    headers.Authorization = token;
+  }
+
+  return fetch(postsHost, {
+    method: "GET",
+    headers,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      return data.posts;
+    });
+}
+
+/**
+ * Получить посты конкретного пользователя.
+ * @param {Object} params
+ * @param {string} [params.token] - Токен авторизации (для получения состояния isLiked).
+ * @param {string} params.userId - ID пользователя.
+ * @returns {Promise<Array>} - Массив постов пользователя.
+ */
+export function getUserPosts({ token, userId }) {
+  const headers = {};
+
+  // Если токен предоставлен, добавляем его в заголовки
+  if (token) {
+    headers.Authorization = token;
+  }
+
+  return fetch(`${postsHost}/user-posts/${userId}`, {
+    method: "GET",
+    headers,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      return data.posts;
+    });
+}
+
+/**
+ * Регистрация нового пользователя.
+ * @param {Object} params
+ * @param {string} params.login
+ * @param {string} params.password
+ * @param {string} params.name
+ * @param {string} params.imageUrl
+ * @returns {Promise<Object>} - Данные нового пользователя.
+ */
+export function registerUser({ login, password, name, imageUrl }) {
+  return fetch(baseHost + "/api/user", {
+    method: "POST",
+    // Убираем Content-Type: application/json
+    headers: {},
+    body: JSON.stringify({
+      login,
+      password,
+      name,
+      imageUrl,
+    }),
+  }).then((response) => {
+    if (response.status === 400) {
+      return response.json().then((errorData) => {
+         throw new Error(errorData?.error || "Такой пользователь уже существует");
+      });
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при регистрации");
+    }
+    return response.json();
+  });
+}
+
+/**
+ * Авторизация пользователя.
+ * @param {Object} params
+ * @param {string} params.login
+ * @param {string} params.password
+ * @returns {Promise<Object>} - Данные авторизованного пользователя.
+ */
+export function loginUser({ login, password }) {
+  return fetch(baseHost + "/api/user/login", {
+    method: "POST",
+    // Убираем Content-Type: application/json
+    headers: {},
+    body: JSON.stringify({
+      login,
+      password,
+    }),
+  }).then((response) => {
+    if (response.status === 400) {
+      return response.json().then((errorData) => {
+         throw new Error(errorData?.error || "Неверный логин или пароль");
+      });
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при входе");
+    }
+    return response.json();
+  });
+}
+
+/**
+ * Добавление нового поста.
+ * @param {Object} params
+ * @param {string} params.token - Токен авторизации (обязательно).
+ * @param {string} params.description - Описание поста.
+ * @param {string} params.imageUrl - URL изображения.
+ * @returns {Promise<Object>} - Результат операции.
+ */
 export function addPost({ token, description, imageUrl }) {
   console.log("API: Отправляем данные на сервер:", { description, imageUrl });
 
   return fetch(postsHost, {
     method: "POST",
     headers: {
-
+      // Убираем Content-Type: application/json
       Authorization: token,
     },
     body: JSON.stringify({
@@ -24,6 +157,76 @@ export function addPost({ token, description, imageUrl }) {
     }
     if (!response.ok) {
       throw new Error("Ошибка при добавлении поста");
+    }
+    return response.json();
+  });
+}
+
+/**
+ * Загрузка изображения.
+ * @param {Object} params
+ * @param {File} params.file - Файл изображения.
+ * @returns {Promise<Object>} - Данные загрузки (включая URL).
+ */
+export function uploadImage({ file }) {
+  const data = new FormData();
+  data.append("file", file);
+
+  return fetch(baseHost + "/api/upload/image", {
+    method: "POST",
+    body: data,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    });
+}
+
+/**
+ * Поставить лайк посту.
+ * @param {Object} params
+ * @param {string} params.token - Токен авторизации (обязательно).
+ * @param {string} params.postId - ID поста.
+ * @returns {Promise<Object>} - Обновленный пост.
+ */
+export function likePost({ token, postId }) {
+  return fetch(`${postsHost}/${postId}/like`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    },
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при лайке");
+    }
+    return response.json();
+  });
+}
+
+/**
+ * Убрать лайк с поста.
+ * @param {Object} params
+ * @param {string} params.token - Токен авторизации (обязательно).
+ * @param {string} params.postId - ID поста.
+ * @returns {Promise<Object>} - Обновленный пост.
+ */
+export function dislikePost({ token, postId }) {
+  return fetch(`${postsHost}/${postId}/dislike`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    },
+  }).then((response) => {
+    if (response.status === 401) {
+      throw new Error("Нет авторизации");
+    }
+    if (!response.ok) {
+      throw new Error("Ошибка при дизлайке");
     }
     return response.json();
   });
