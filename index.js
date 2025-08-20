@@ -1,14 +1,16 @@
-
 import {
   getPosts,
-  addPost,
   getUserPosts,
+  addPost,
   likePost,
   dislikePost,
-  uploadImage
+  deletePost,
+  verifyToken,
 } from "./api.js";
 import { renderAddPostPageComponent } from "./components/add-post-page-component.js";
 import { renderAuthPageComponent } from "./components/auth-page-component.js";
+import { renderPostsPageComponent } from "./components/posts-page-component.js";
+import { renderLoadingPageComponent } from "./components/loading-page-component.js";
 import {
   ADD_POSTS_PAGE,
   AUTH_PAGE,
@@ -16,8 +18,6 @@ import {
   POSTS_PAGE,
   USER_POSTS_PAGE,
 } from "./routes.js";
-import { renderPostsPageComponent } from "./components/posts-page-component.js";
-import { renderLoadingPageComponent } from "./components/loading-page-component.js";
 import {
   getUserFromLocalStorage,
   removeUserFromLocalStorage,
@@ -28,48 +28,31 @@ export let user = getUserFromLocalStorage();
 export let page = null;
 export let posts = [];
 
+export const getToken = () =>
+  user && user.token ? `Bearer ${user.token}` : undefined; // Экспортируем getToken
 
-export const getToken = () => {
-  
-  const token = user ? `Bearer ${user.token}` : undefined;
-  console.log("Index: Полученный токен:", token);
-  return token;
+export const setUser = (newUser) => {
+  user = newUser;
+  saveUserToLocalStorage(user);
+  if (user) goToPage(POSTS_PAGE);
+  else goToPage(AUTH_PAGE);
 };
-
 
 export const logout = () => {
   user = null;
   removeUserFromLocalStorage();
-  goToPage(POSTS_PAGE);
+  goToPage(POSTS_PAGE); // Изменено с AUTH_PAGE на POSTS_PAGE
 };
 
-
-const smoothPageTransition = (callback) => {
-  const appEl = document.getElementById("app");
-  const container = appEl.querySelector('.page-container');
-
-  if (container) {
-    container.classList.remove('active');
-    setTimeout(() => {
-      callback();
-      setTimeout(() => {
-        const newContainer = appEl.querySelector('.page-container');
-        if (newContainer) {
-          newContainer.classList.add('page-transition');
-          setTimeout(() => {
-            newContainer.classList.add('active');
-          }, 10);
-        }
-      }, 10);
-    }, 300);
-  } else {
-    callback();
-  }
+export const showNotification = (message) => {
+  const notification = document.createElement("div");
+  notification.className = "notification";
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 3000);
 };
 
-
-export const goToPage = (newPage, data) => {
-  
+export const goToPage = (newPage, data = {}) => {
   if (
     [
       POSTS_PAGE,
@@ -79,224 +62,125 @@ export const goToPage = (newPage, data) => {
       LOADING_PAGE,
     ].includes(newPage)
   ) {
-    
     if (newPage === ADD_POSTS_PAGE) {
-    
       page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
-      return renderApp();
+      renderApp();
+      return;
     }
 
     if (newPage === POSTS_PAGE) {
       page = LOADING_PAGE;
       renderApp();
-
-      return getPosts({ token: getToken() }) 
+      const token = getToken();
+      getPosts({ token })
         .then((newPosts) => {
-          console.log("Index: Получены посты:", newPosts);
           page = POSTS_PAGE;
           posts = newPosts;
           renderApp();
         })
         .catch((error) => {
-          console.error("Index: Ошибка получения постов:", error);
-         
-          alert("Не удалось получить посты: " + error.message);
-          page = POSTS_PAGE; 
+          console.error("Error fetching posts:", error);
+          showNotification(`Ошибка загрузки постов: ${error.message}`);
+          page = POSTS_PAGE; // Остаёмся на POSTS_PAGE даже при ошибке
           renderApp();
         });
+      return;
     }
 
     if (newPage === USER_POSTS_PAGE) {
       page = LOADING_PAGE;
       renderApp();
-
-     
-      return getUserPosts({ token: getToken(), userId: data?.userId })
-        .then((userPosts) => {
-          console.log("Index: Получены посты пользователя:", userPosts);
-          page = USER_POSTS_PAGE;
-          posts = userPosts;
-          renderApp();
-        })
-        .catch((error) => {
-          console.error("Index: Ошибка получения постов пользователя:", error);
-       
-          alert("Не удалось получить посты пользователя: " + error.message);
-          
-          page = POSTS_PAGE;
-          renderApp();
-        });
-    }
-
-    
-    page = newPage;
-    renderApp();
-
-    return;
-  }
-
-  throw new Error("страницы не существует");
-};
-
-
-export const toggleLike = (postId, isLiked) => {
-  const token = getToken();
-
-  
-  if (!token) {
-    console.log("Index: Попытка лайка без авторизации, перенаправляем на AUTH_PAGE");
-    const appEl = document.getElementById("app");
-    const container = appEl.querySelector('.page-container');
-
-    if (container) {
-      container.classList.remove('active');
-      setTimeout(() => {
-        goToPage(AUTH_PAGE);
-      }, 300);
-    } else {
-      goToPage(AUTH_PAGE);
-    }
-    return Promise.resolve();
-  }
-
-  const likePromise = isLiked ? dislikePost : likePost;
-
-  return likePromise({ token, postId })
-    .then((responseData) => {
-      console.log("Index: Лайк/дизлайк успешен:", responseData);
-      const postIndex = posts.findIndex(post => post.id === postId);
-      if (postIndex !== -1) {
-        
-        posts[postIndex] = responseData.post;
-       
-        updatePostInDOM(postId, responseData.post);
+      const token = getToken();
+      if (token) {
+        verifyToken({ token })
+          .then((isValid) => {
+            if (!isValid) {
+              console.warn("Invalid token, logging out");
+              logout();
+              return;
+            }
+            getUserPosts({ token, userId: data.userId })
+              .then((newPosts) => {
+                page = USER_POSTS_PAGE;
+                posts = newPosts;
+                renderApp(data);
+              })
+              .catch((error) => {
+                console.error("Error fetching user posts:", error);
+                showNotification(
+                  `Ошибка загрузки постов пользователя: ${error.message}`
+                );
+                page = AUTH_PAGE;
+                renderApp();
+              });
+          })
+          .catch((error) => {
+            console.error("Error verifying token:", error);
+            showNotification(`Ошибка проверки токена: ${error.message}`);
+            logout();
+          });
+      } else {
+        page = AUTH_PAGE;
+        renderApp();
       }
-    })
-    .catch((error) => {
-      console.error("Index: Ошибка при работе с лайком:", error);
-      alert("Не удалось выполнить действие: " + error.message);
-    });
-};
-
-
-function updatePostInDOM(postId, updatedPost) {
- 
-  const postElement = document.querySelector(`.like-button[data-post-id="${postId}"]`);
-  if (postElement) {
-    const likeImage = postElement.querySelector('img');
-    
-    const newLikeImage = updatedPost.isLiked
-      ? "./assets/images/like-active.svg"
-      : "./assets/images/like-not-active.svg";
-    if (likeImage) {
-      likeImage.src = newLikeImage;
-    }
-
-    
-    const likesCountElement = postElement.closest('.post-likes')?.querySelector('.post-likes-text strong');
-    if (likesCountElement) {
-      likesCountElement.textContent = updatedPost.likes.length;
-    }
-
-    
-    postElement.dataset.isLiked = updatedPost.isLiked;
-  }
-}
-
-
-const renderApp = () => {
-  const appEl = document.getElementById("app");
-
-  if (page === LOADING_PAGE) {
-    return renderLoadingPageComponent({
-      appEl,
-      user,
-      goToPage,
-    });
-  }
-
-  if (page === AUTH_PAGE) {
-    return renderAuthPageComponent({
-      appEl,
-      setUser: (newUser) => {
-        console.log("Index: Установка нового пользователя:", newUser);
-        user = newUser;
-        saveUserToLocalStorage(user);
-     
-        smoothPageTransition(() => goToPage(POSTS_PAGE));
-      },
-      user,
-      goToPage,
-    });
-  }
-
-  if (page === ADD_POSTS_PAGE) {
-    
-    if (!user) {
-      console.log("Index: Попытка доступа к ADD_POSTS_PAGE без авторизации");
-      goToPage(AUTH_PAGE);
       return;
     }
 
+    page = newPage;
+    renderApp();
+    return;
+  }
+
+  console.error("Unknown page:", newPage);
+  const appEl = document.getElementById("app");
+  appEl.innerHTML = `<div class="page-container">Ошибка: неизвестная страница</div>`;
+};
+
+const renderApp = (data = {}) => {
+  const appEl = document.getElementById("app");
+  appEl.innerHTML = "";
+
+  if (page === LOADING_PAGE) {
+    return renderLoadingPageComponent({ appEl });
+  }
+
+  if (page === AUTH_PAGE) {
+    return renderAuthPageComponent({ appEl, setUser, user, goToPage });
+  }
+
+  if (page === ADD_POSTS_PAGE) {
     return renderAddPostPageComponent({
       appEl,
-      
       onAddPostClick: ({ description, imageUrl }) => {
-        const token = getToken();
-        console.log("Index: onAddPostClick вызван с данными:", { description, imageUrl });
-
-        if (!token) {
-          console.log("Index: Нет токена при попытке добавить пост");
-         
-          smoothPageTransition(() => goToPage(AUTH_PAGE));
-          return;
-        }
-
-        if (!description.trim()) {
-          alert("Введите описание поста");
-          return;
-        }
-
-        if (!imageUrl) {
-          alert("Загрузите изображение");
-          return;
-        }
-
-       
-        addPost({ token, description, imageUrl })
-          .then((result) => {
-            console.log("Index: Пост успешно добавлен:", result);
-           
-            smoothPageTransition(() => goToPage(POSTS_PAGE));
+        addPost({ token: getToken(), description, imageUrl })
+          .then(() => getPosts({ token: getToken() }))
+          .then((newPosts) => {
+            posts = newPosts;
+            goToPage(POSTS_PAGE);
+            showNotification("Пост успешно добавлен!");
           })
           .catch((error) => {
-            console.error("Index: Ошибка при добавлении поста:", error);
-            alert("Не удалось добавить пост: " + error.message);
+            console.error("Error adding post:", error);
+            showNotification(`Ошибка при добавлении поста: ${error.message}`);
           });
       },
     });
   }
 
-  if (page === POSTS_PAGE) {
+  if (page === POSTS_PAGE || page === USER_POSTS_PAGE) {
     return renderPostsPageComponent({
       appEl,
       posts,
       user,
       goToPage,
-      toggleLike,
+      likePost,
+      dislikePost,
+      deletePost,
+      userId: data.userId,
     });
   }
 
-  if (page === USER_POSTS_PAGE) {
-    return renderPostsPageComponent({
-      appEl,
-      posts,
-      user,
-      goToPage,
-      toggleLike,
-      isUserPostsPage: true,
-    });
-  }
+  appEl.innerHTML = `<div class="page-container">Ошибка: неизвестная страница</div>`;
 };
 
 goToPage(POSTS_PAGE);
