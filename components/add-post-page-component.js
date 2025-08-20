@@ -1,4 +1,4 @@
-
+// add-post-page-component.js
 import { renderUploadImageComponent } from "./upload-image-component.js";
 import { getToken } from "../index.js";
 
@@ -29,11 +29,11 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
 
   appEl.innerHTML = appHtml;
 
-  
+  // Исправлено: Получаем элемент контейнера и передаем его в renderUploadImageComponent
   const uploadContainerElement = document.getElementById("upload-image-container");
   if (uploadContainerElement) {
     renderUploadImageComponent({
-      element: uploadContainerElement, 
+      element: uploadContainerElement, // Передаем сам элемент
       onImageUrlChange: (imageUrl) => {
         console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
         currentImageUrl = imageUrl;
@@ -47,3 +47,45 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
   const descriptionElement = document.getElementById("post-description");
   const errorElement = document.getElementById("form-error");
 
+  // Исправлено: Добавлена проверка существования элементов перед добавлением обработчиков
+  if (addButton && descriptionElement && errorElement) {
+    addButton.addEventListener("click", () => {
+      const description = descriptionElement.value;
+
+      // Очищаем предыдущие ошибки
+      errorElement.textContent = "";
+
+      // Проверяем обязательные поля
+      if (!description.trim()) {
+        errorElement.textContent = "Введите описание поста";
+        return;
+      }
+
+      if (!currentImageUrl) {
+        errorElement.textContent = "Загрузите изображение";
+        return;
+      }
+
+      // Получаем токен (проверка наличия токена уже должна быть в index.js в onAddPostClick)
+      // Но всё равно делаем проверку для дополнительной безопасности на этом уровне
+      const token = getToken();
+      if (!token) {
+        errorElement.textContent = "Ошибка авторизации. Пожалуйста, войдите снова.";
+        console.warn("AddPostComponent: Попытка добавить пост без токена.");
+        // Здесь можно добавить перенаправление на страницу авторизации, если необходимо
+        // Например: import { goToPage, AUTH_PAGE } from "../routes.js"; goToPage(AUTH_PAGE);
+        return;
+      }
+
+      console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description, imageUrl: currentImageUrl });
+
+      // Вызываем переданную функцию обработки клика
+      onAddPostClick({
+        description: description.trim(),
+        imageUrl: currentImageUrl,
+      });
+    });
+  } else {
+    console.error("AddPostComponent: Один или несколько необходимых элементов форм не найдены.");
+  }
+}
