@@ -112,42 +112,26 @@ export async function registerUser({ login, password, name, imageUrl }) {
   return response.json();
 }
 
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ loginUser
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ loginUser — отправляем данные как форму
 export async function loginUser({ login, password }) {
-  // Используем URLSearchParams вместо JSON и НЕ указываем Content-Type
   const params = new URLSearchParams();
   params.append('login', login);
   params.append('password', password);
 
   const response = await fetch(`${baseHost}/api/user/login`, {
     method: "POST",
-    // Не указываем Content-Type, браузер сам установит правильный
+    // Не указываем Content-Type — браузер сам установит application/x-www-form-urlencoded
     body: params,
   });
 
   if (!response.ok) {
-    // Пытаемся получить данные из ответа
     let errorText;
-    const contentType = response.headers.get("content-type");
-    
-    if (contentType && contentType.includes("application/json")) {
-      // Если ответ в формате JSON
-      try {
-        const data = await response.json();
-        errorText = data.error || "Ошибка авторизации";
-      } catch (e) {
-        // Если не удалось распарсить JSON
-        errorText = "Ошибка авторизации (некорректный ответ)";
-      }
-    } else {
-      // Если ответ не JSON - считываем как текст
-      try {
-        errorText = await response.text();
-      } catch (e) {
-        errorText = "Ошибка авторизации";
-      }
+    try {
+      const data = await response.json();
+      errorText = data.error || "Неверный логин или пароль";
+    } catch (e) {
+      errorText = await response.text();
     }
-    
     throw new Error(errorText);
   }
 
