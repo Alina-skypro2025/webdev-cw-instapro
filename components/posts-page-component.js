@@ -125,7 +125,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, likePos
               posts.splice(postIndex, 1);
             }
             renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost });
-            alert("Пост успешно удален");
+            // alert("Пост успешно удален"); // Уведомление уже показывается через showNotification
           })
           .catch((error) => {
             console.error("Failed to delete post:", error);
