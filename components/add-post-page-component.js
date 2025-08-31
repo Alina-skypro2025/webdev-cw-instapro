@@ -37,6 +37,8 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
       onImageUrlChange: (imageUrl) => {
         console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
         currentImageUrl = imageUrl;
+        // Обновляем состояние формы при изменении изображения
+        updateFormValidity();
       },
     });
   } else {
@@ -49,14 +51,14 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
 
   // Исправлено: Добавлена проверка существования элементов перед добавлением обработчиков
   if (addButton && descriptionElement && errorElement) {
+    // Обновляем состояние формы при изменении описания
+    descriptionElement.addEventListener("input", () => {
+      updateFormValidity();
+    });
+
     addButton.addEventListener("click", () => {
-      const description = descriptionElement.value;
-
-      // Очищаем предыдущие ошибки
-      errorElement.textContent = "";
-
       // Проверяем обязательные поля
-      if (!description.trim()) {
+      if (!descriptionElement.value.trim()) {
         errorElement.textContent = "Введите описание поста";
         return;
       }
@@ -77,15 +79,27 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
         return;
       }
 
-      console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description, imageUrl: currentImageUrl });
+      console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description: descriptionElement.value.trim(), imageUrl: currentImageUrl });
 
       // Вызываем переданную функцию обработки клика
       onAddPostClick({
-        description: description.trim(),
+        description: descriptionElement.value.trim(),
         imageUrl: currentImageUrl,
       });
     });
   } else {
     console.error("AddPostComponent: Один или несколько необходимых элементов форм не найдены.");
+  }
+
+  // Функция для обновления состояния формы
+  function updateFormValidity() {
+    const description = descriptionElement.value.trim();
+    const hasDescription = description.length > 0;
+    const hasImageUrl = currentImageUrl !== "";
+
+    // Если все поля заполнены, убираем ошибку
+    if (hasDescription && hasImageUrl) {
+      errorElement.textContent = "";
+    }
   }
 }
