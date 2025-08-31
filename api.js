@@ -68,15 +68,14 @@ export function registerUser({ login, password, name, imageUrl }) {
 }
 
 export function loginUser({ login, password }) {
+  const params = new URLSearchParams();
+  params.append('login', login);
+  params.append('password', password);
+
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      login,
-      password,
-    }),
+    // Не указываем Content-Type — браузер сам установит application/x-www-form-urlencoded
+    body: params,
   })
   .then((response) => {
     if (response.status === 400) {
