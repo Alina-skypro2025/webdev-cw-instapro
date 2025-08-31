@@ -85,7 +85,6 @@ export function renderAuthPageComponent({ appEl, setUser }) {
 
         loginUser({ login, password })
           .then((userData) => {
-            // Исправлено: теперь правильно обрабатываем ответ от API
             setUser({
               name: userData.user.name,
               token: userData.user.token,
@@ -124,7 +123,6 @@ export function renderAuthPageComponent({ appEl, setUser }) {
 
         registerUser({ login, password, name, imageUrl })
           .then((userData) => {
-            // Исправлено: теперь правильно обрабатываем ответ от API
             setUser({
               name: userData.user.name,
               token: userData.user.token,
