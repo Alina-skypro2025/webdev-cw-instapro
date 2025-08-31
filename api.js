@@ -1,7 +1,7 @@
 // Замени на свой, чтобы получить независимый от других набор данных.
 // "боевая" версия инстапро лежит в ключе prod
 const personalKey = "prod";
-const baseHost = "https://wedev-api.sky.pro"; // Исправлено: убраны лишние пробелы
+const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 // Функция для проверки ответа от сервера
@@ -41,6 +41,32 @@ export function getUserPosts({ token, userId }) {
     });
 }
 
+// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ ЛОГИНА
+export function loginUser({ login, password }) {
+  return fetch(baseHost + "/api/user/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json", // Устанавливаем JSON формат
+    },
+    body: JSON.stringify({
+      login,
+      password,
+    }),
+  })
+  .then((response) => {
+    if (response.status === 400) {
+      return response.json().then((data) => {
+        throw new Error(data.error || "Неверный логин или пароль");
+      });
+    }
+    if (!response.ok) {
+      throw new Error(`Ошибка входа: ${response.status}`);
+    }
+    return response.json();
+  });
+}
+
+// Регистрация пользователя
 export function registerUser({ login, password, name, imageUrl }) {
   return fetch(baseHost + "/api/user", {
     method: "POST",
@@ -67,30 +93,7 @@ export function registerUser({ login, password, name, imageUrl }) {
   });
 }
 
-export function loginUser({ login, password }) {
-  const params = new URLSearchParams();
-  params.append('login', login);
-  params.append('password', password);
-
-  return fetch(baseHost + "/api/user/login", {
-    method: "POST",
-    // Не указываем Content-Type — браузер сам установит application/x-www-form-urlencoded
-    body: params,
-  })
-  .then((response) => {
-    if (response.status === 400) {
-      return response.json().then((data) => {
-        throw new Error(data.error || "Неверный логин или пароль");
-      });
-    }
-    if (!response.ok) {
-      throw new Error(`Ошибка входа: ${response.status}`);
-    }
-    return response.json();
-  });
-}
-
-// Загружает картинку в облако, возвращает url загруженной картинки
+// Загрузка изображения
 export function uploadImage({ file }) {
   const data = new FormData();
   data.append("file", file);
@@ -102,7 +105,7 @@ export function uploadImage({ file }) {
   .then(checkResponse);
 }
 
-// Добавить новый пост
+// Добавить пост
 export function addPost({ token, description, imageUrl }) {
   return fetch(postsHost, {
     method: "POST",
