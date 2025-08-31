@@ -24,7 +24,6 @@ function simpleFormatDate(dateString) {
   }
 }
 
-// Функции для правильного склонения слов
 function getMinutesWord(minutes) {
   const lastDigit = minutes % 10;
   const lastTwoDigits = minutes % 100;
@@ -145,7 +144,6 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     goToPage,
   });
 
-  // Обработчик клика по пользователю для перехода к его постам
   document.querySelectorAll(".post-header").forEach(userEl => {
     userEl.addEventListener("click", () => {
       const userId = userEl.dataset.userId;
@@ -157,12 +155,10 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
-  // Обработчик лайков
   document.querySelectorAll('.like-button').forEach(button => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       
-      // Анимация лайка
       button.classList.add('liked');
       setTimeout(() => {
         button.classList.remove('liked');
@@ -171,17 +167,14 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       const postId = button.dataset.postId;
       const isLiked = button.dataset.isLiked === 'true';
       
-      // Обновляем состояние кнопки
       button.dataset.isLiked = !isLiked;
       
-      // Вызываем функцию переключения лайка, если она существует
       if (typeof toggleLike === 'function') {
         toggleLike(postId, isLiked);
       }
     });
   });
 
-  // Анимация появления страницы
   const container = document.querySelector('.page-container');
   if (container) {
     container.classList.add('page-transition');
