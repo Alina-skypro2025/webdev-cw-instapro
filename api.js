@@ -1,5 +1,5 @@
 // api.js
-const personalKey = "your-unique-key";
+const personalKey = "prod"; 
 const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
