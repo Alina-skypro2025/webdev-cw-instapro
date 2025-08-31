@@ -42,10 +42,8 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
     addButton.addEventListener("click", () => {
       const description = descriptionElement.value;
 
-      // Очищаем предыдущие ошибки
       errorElement.textContent = "";
 
-      // Проверяем обязательные поля
       if (!description.trim()) {
         errorElement.textContent = "Введите описание поста";
         return;
