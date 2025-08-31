@@ -1,5 +1,5 @@
 // api.js
-const personalKey = "prod"; 
+const personalKey = "prod"; // TODO: Замените на свой уникальный ключ
 const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
@@ -112,18 +112,29 @@ export async function registerUser({ login, password, name, imageUrl }) {
   return response.json();
 }
 
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ loginUser
 export async function loginUser({ login, password }) {
+  // Используем URLSearchParams вместо JSON и НЕ указываем Content-Type
+  const params = new URLSearchParams();
+  params.append('login', login);
+  params.append('password', password);
+
   const response = await fetch(`${baseHost}/api/user/login`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ login, password }),
+    // Не указываем Content-Type, браузер сам установит правильный
+    body: params,
   });
 
   if (!response.ok) {
-    const data = await response.json();
-    throw new Error(data.error || "Неверный логин или пароль");
+    // Пытаемся получить JSON с ошибкой, если не получится - общий текст
+    try {
+      const data = await response.json();
+      throw new Error(data.error || "Неверный логин или пароль");
+    } catch (e) {
+      // Если ответ не JSON, используем текст ошибки
+      const text = await response.text();
+      throw new Error(text || "Ошибка авторизации");
+    }
   }
   return response.json();
 }
