@@ -125,4 +125,13 @@ export function renderPostsPageComponent({
           })
           .catch((error) => {
             console.error("Error deleting post:", error);
-            showNotification(`Ошибка удаления поста: ${error
+            showNotification(`Ошибка удаления поста: ${error.message}`);
+          })
+          .finally(() => {
+            deleteButton.disabled = false;
+          });
+      });
+    }
+  };
+  renderPosts();
+}
