@@ -1,9 +1,11 @@
-
+// components/user-posts-page-component.js
 import { renderHeaderComponent } from "./header-component.js";
-import { formatDistanceToNow } from "date-fns";
-import { ru } from "date-fns/locale";
 import { AUTH_PAGE } from "../routes.js";
 import { showNotification } from "../index.js";
+
+// Используем date-fns из глобальной переменной
+const { formatDistanceToNow } = window.dateFns;
+const { ru } = window.dateFns;
 
 function escapeHTML(str) {
   if (!str) return str;
