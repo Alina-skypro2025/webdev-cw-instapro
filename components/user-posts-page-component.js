@@ -1,6 +1,19 @@
+
 import { renderHeaderComponent } from "./header-component.js";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
+import { AUTH_PAGE } from "../routes.js";
+import { showNotification } from "../index.js";
+
+function escapeHTML(str) {
+  if (!str) return str;
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 export function renderUserPostsPageComponent({
   appEl,
@@ -11,94 +24,87 @@ export function renderUserPostsPageComponent({
   likePost,
   dislikePost,
 }) {
-  const appHtml = `
-    <div class="page-container">
-      <div class="header-container"></div>
-      <div class="posts-user-header">
-        <img src="${posts[0]?.user.imageUrl || ""}" class="posts-user-header__user-image">
-        <p class="posts-user-header__user-name">${sanitizeHtml(posts[0]?.user.name || "")}</p>
-      </div>
-      <ul class="posts">
-        ${posts
-          .map(
-            (post) => `
-              <li class="post">
-                <div class="post-image-container">
-                  <img class="post-image" src="${post.imageUrl}">
-                </div>
-                <div class="post-likes">
-                  <button data-post-id="${post.id}" data-is-liked="${post.isLiked}" class="like-button">
-                    <img src="./assets/images/${
-                      post.isLiked ? "like-active.svg" : "like-not-active.svg"
-                    }">
-                  </button>
-                  <p class="post-likes-text">
-                    Нравится: <strong>${post.likes.length}</strong>
+  const renderUserPosts = () => {
+    const appHtml = `
+      <div class="page-container">
+        <div class="header-container"></div>
+        ${
+          posts.length > 0
+            ? `
+          <div class="posts-user-header">
+            <img src="${escapeHTML(posts[0].user.imageUrl)}" class="posts-user-header__user-image">
+            <p class="posts-user-header__user-name">${escapeHTML(posts[0].user.name)}</p>
+          </div>
+        `
+            : ""
+        }
+        <ul class="posts">
+          ${posts
+            .map(
+              (post) => `
+                <li class="post">
+                  <div class="post-image-container">
+                    <img class="post-image" src="${escapeHTML(post.imageUrl)}">
+                  </div>
+                  <div class="post-likes">
+                    <button data-post-id="${post.id}" class="like-button">
+                      <img src="./assets/images/${
+                        post.isLiked ? "like-active.svg" : "like-not-active.svg"
+                      }">
+                    </button>
+                    <p class="post-likes-text">
+                      Нравится: <strong>${post.likes.length}</strong>
+                    </p>
+                  </div>
+                  <p class="post-text">
+                    <span class="user-name">${escapeHTML(post.user.name)}</span>
+                    ${escapeHTML(post.description)}
                   </p>
-                </div>
-                <p class="post-text">
-                  <span class="user-name">${sanitizeHtml(post.user.name)}</span>
-                  ${sanitizeHtml(post.description)}
-                </p>
-                <p class="post-date">
-                  ${formatDistanceToNow(new Date(post.createdAt), { locale: ru })} назад
-                </p>
-              </li>
-            `
-          )
-          .join("")}
-      </ul>
-    </div>
-  `;
+                  <p class="post-date">
+                    ${formatDistanceToNow(new Date(post.createdAt), {
+                      locale: ru,
+                    })} назад
+                  </p>
+                </li>
+              `
+            )
+            .join("")}
+        </ul>
+      </div>
+    `;
 
-  appEl.innerHTML = appHtml;
+    appEl.innerHTML = appHtml;
 
-  renderHeaderComponent({
-    element: document.querySelector(".header-container"),
-  });
-
-  for (let likeBtn of document.querySelectorAll(".like-button")) {
-    likeBtn.addEventListener("click", () => {
-      if (!user) {
-        showNotification("Авторизуйтесь для лайков");
-        return;
-      }
-      const postId = likeBtn.dataset.postId;
-      const isLiked = likeBtn.dataset.isLiked === "true";
-      const action = isLiked ? dislikePost : likePost;
-      action({ postId, token: user.token })
-        .then((response) => {
-          const post = posts.find((p) => p.id === postId);
-          post.isLiked = response.post.isLiked;
-          post.likes = response.post.likes;
-          renderUserPostsPageComponent({
-            appEl,
-            userId,
-            posts,
-            user,
-            goToPage,
-            likePost,
-            dislikePost,
-          });
-        })
-        .catch((error) => {
-          console.error(error);
-          showNotification("Ошибка при изменении лайка");
-        });
+    renderHeaderComponent({
+      element: document.querySelector(".header-container"),
+      user,
+      goToPage,
     });
-  }
-}
 
-function sanitizeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
+    for (let likeBtn of document.querySelectorAll(".like-button")) {
+      likeBtn.addEventListener("click", () => {
+        if (!user) {
+          showNotification("Авторизуйтесь для лайков");
+          goToPage(AUTH_PAGE);
+          return;
+        }
+        const postId = likeBtn.dataset.postId;
+        const post = posts.find((p) => p.id === postId);
+        const isLiked = post.isLiked;
+        const action = isLiked ? dislikePost : likePost;
+        action({ postId, token: `Bearer ${user.token}` })
+          .then((response) => {
+            const index = posts.findIndex((p) => p.id === postId);
+            posts[index] = response.post;
+            renderUserPosts(); // Перерисовываем компонент
+          })
+          .catch((error) => {
+            console.error(error);
+            showNotification("Ошибка при изменении лайка");
+          });
+      });
+    }
+  };
 
-function showNotification(message) {
-  const notification = document.createElement("div");
-  notification.className = "notification";
-  notification.textContent = message;
-  document.body.appendChild(notification);
-  setTimeout(() => notification.remove(), 3000);
+  renderUserPosts();
 }
