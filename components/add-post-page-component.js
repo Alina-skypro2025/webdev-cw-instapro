@@ -1,4 +1,4 @@
-
+// components/add-post-page-component.js
 import { renderHeaderComponent } from "./header-component.js";
 import { renderUploadImageComponent } from "./upload-image-component.js";
 import { addPost } from "../api.js";
