@@ -1,9 +1,4 @@
-// helpers.js
 
-/**
- * Сохраняет объект пользователя в localStorage.
- * @param {Object|null} user - Объект пользователя для сохранения.
- */
 export function saveUserToLocalStorage(user) {
   // Проверяем, что пользователь существует и содержит все необходимые поля
   if (!user || !user.token || !user.name || user.id === undefined) {
