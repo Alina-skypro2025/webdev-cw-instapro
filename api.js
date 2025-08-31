@@ -112,16 +112,14 @@ export async function registerUser({ login, password, name, imageUrl }) {
   return response.json();
 }
 
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ loginUser — отправляем данные как форму
+// ИСПРАВЛЕННАЯ ФУНКЦИЯ loginUser — отправляем JSON
 export async function loginUser({ login, password }) {
-  const params = new URLSearchParams();
-  params.append('login', login);
-  params.append('password', password);
-
   const response = await fetch(`${baseHost}/api/user/login`, {
     method: "POST",
-    // Не указываем Content-Type — браузер сам установит application/x-www-form-urlencoded
-    body: params,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ login, password }),
   });
 
   if (!response.ok) {
