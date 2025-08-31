@@ -1,18 +1,19 @@
-import { USER_POSTS_PAGE } from "../routes.js";
+
 import { renderHeaderComponent } from "./header-component.js";
+import { USER_POSTS_PAGE } from "../routes.js";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
 import { getToken, showNotification } from "../index.js";
+import { AUTH_PAGE } from "../routes.js";
 
 function escapeHTML(str) {
   if (!str) return str;
-  return str.replace(/[&<>'"]/g, (match) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "'": "&apos;",
-    '"': "&quot;",
-  }[match]));
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 export function renderPostsPageComponent({
@@ -35,14 +36,14 @@ export function renderPostsPageComponent({
         return `
           <li class="post">
             <div class="post-header" data-user-id="${post.user.id}">
-              <img src="${post.user.imageUrl}" class="post-header__user-image" alt="User avatar">
+              <img src="${escapeHTML(post.user.imageUrl)}" class="post-header__user-image" alt="User avatar">
               <p class="post-header__user-name">${escapeHTML(post.user.name)}</p>
             </div>
             <div class="post-image-container">
-              <img class="post-image" src="${post.imageUrl}" alt="Post image">
+              <img class="post-image" src="${escapeHTML(post.imageUrl)}" alt="Post image">
             </div>
             <div class="post-likes">
-              <button data-post-id="${post.id}" class="like-button ${post.isLiked ? "liked" : ""}">
+              <button data-post-id="${post.id}" class="like-button">
                 <img src="./assets/images/like-${post.isLiked ? "active" : "not-active"}.svg">
               </button>
               <p class="post-likes-text">
@@ -54,7 +55,11 @@ export function renderPostsPageComponent({
               ${escapeHTML(post.description)}
             </p>
             <p class="post-date">${createdAt}</p>
-            ${user && post.user.id === user._id ? '<button class="delete-button" data-post-id="' + post.id + '">Удалить</button>' : ""}
+            ${
+              user && post.user.id === user._id
+                ? `<button class="delete-button" data-post-id="${post.id}">Удалить</button>`
+                : ""
+            }
           </li>`;
       })
       .join("");
@@ -92,7 +97,7 @@ export function renderPostsPageComponent({
           .then(({ post: updatedPost }) => {
             const index = posts.findIndex((p) => p.id === postId);
             posts[index] = updatedPost;
-            renderPosts();
+            renderPosts(); // Перерисовываем компонент с обновленными данными
           })
           .catch((error) => {
             console.error("Error liking post:", error);
