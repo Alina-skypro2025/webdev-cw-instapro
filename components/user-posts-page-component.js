@@ -3,9 +3,9 @@ import { renderHeaderComponent } from "./header-component.js";
 import { AUTH_PAGE } from "../routes.js";
 import { showNotification } from "../index.js";
 
-// Используем date-fns из глобальной переменной
-const { formatDistanceToNow } = window.dateFns;
-const { ru } = window.dateFns;
+// Проверяем, доступна ли date-fns
+const formatDistanceToNow = window.dateFns ? window.dateFns.formatDistanceToNow : null;
+const ru = window.dateFns ? window.dateFns.ru : null;
 
 function escapeHTML(str) {
   if (!str) return str;
@@ -63,50 +63,10 @@ export function renderUserPostsPageComponent({
                     ${escapeHTML(post.description)}
                   </p>
                   <p class="post-date">
-                    ${formatDistanceToNow(new Date(post.createdAt), {
-                      locale: ru,
-                    })} назад
+                    ${formatDistanceToNow ? formatDistanceToNow(new Date(post.createdAt), { locale: ru }) + " назад" : "Неизвестно"}
                   </p>
                 </li>
               `
             )
             .join("")}
         </ul>
-      </div>
-    `;
-
-    appEl.innerHTML = appHtml;
-
-    renderHeaderComponent({
-      element: document.querySelector(".header-container"),
-      user,
-      goToPage,
-    });
-
-    for (let likeBtn of document.querySelectorAll(".like-button")) {
-      likeBtn.addEventListener("click", () => {
-        if (!user) {
-          showNotification("Авторизуйтесь для лайков");
-          goToPage(AUTH_PAGE);
-          return;
-        }
-        const postId = likeBtn.dataset.postId;
-        const post = posts.find((p) => p.id === postId);
-        const isLiked = post.isLiked;
-        const action = isLiked ? dislikePost : likePost;
-        action({ postId, token: `Bearer ${user.token}` })
-          .then((response) => {
-            const index = posts.findIndex((p) => p.id === postId);
-            posts[index] = response.post;
-            renderUserPosts(); // Перерисовываем компонент
-          })
-          .catch((error) => {
-            console.error(error);
-            showNotification("Ошибка при изменении лайка");
-          });
-      });
-    }
-  };
-
-  renderUserPosts();
-}
