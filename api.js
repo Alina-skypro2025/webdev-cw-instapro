@@ -1,8 +1,10 @@
-// api.js
-const personalKey = "prod"; // TODO: Замените на свой уникальный ключ
+// Замени на свой, чтобы получить независимый от других набор данных.
+// "боевая" версия инстапро лежит в ключе prod
+const personalKey = "prod";
 const baseHost = "https://wedev-api.sky.pro"; // Исправлено: убраны лишние пробелы
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
+// Функция для проверки ответа от сервера
 function checkResponse(response) {
   if (!response.ok) {
     return response.text().then((text) => {
@@ -12,173 +14,140 @@ function checkResponse(response) {
   return response.json();
 }
 
-export async function getPosts({ token }) {
-  try {
-    const headers =
-      token && token !== "Bearer undefined" ? { Authorization: token } : {};
-    const response = await fetch(postsHost, { method: "GET", headers });
-    const data = await checkResponse(response);
-    if (response.status === 401) throw new Error("Нет авторизации");
-    return data.posts;
-  } catch (error) {
-    throw new Error(`Failed to fetch posts: ${error.message}`);
-  }
-}
-
-export async function getUserPosts({ token, userId }) {
-  try {
-    const headers =
-      token && token !== "Bearer undefined" ? { Authorization: token } : {};
-    const response = await fetch(`${postsHost}/user-posts/${userId}`, {
-      method: "GET",
-      headers,
+export function getPosts({ token }) {
+  const headers = token ? { Authorization: token } : {};
+  
+  return fetch(postsHost, {
+    method: "GET",
+    headers,
+  })
+    .then(checkResponse)
+    .then((data) => {
+      return data.posts;
     });
-    const data = await checkResponse(response);
-    if (response.status === 401) throw new Error("Нет авторизации");
-    return data.posts;
-  } catch (error) {
-    throw new Error(`Failed to fetch user posts: ${error.message}`);
-  }
 }
 
-export async function addPost({ token, description, imageUrl }) {
-  try {
-    if (!description || !imageUrl)
-      throw new Error("Описание или URL изображения не переданы");
-    const response = await fetch(postsHost, {
-      method: "POST",
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ description, imageUrl }),
+// Получить посты конкретного пользователя
+export function getUserPosts({ token, userId }) {
+  const headers = token ? { Authorization: token } : {};
+  
+  return fetch(`${postsHost}/user-posts/${userId}`, {
+    method: "GET",
+    headers,
+  })
+    .then(checkResponse)
+    .then((data) => {
+      return data.posts;
     });
-    const data = await checkResponse(response);
-    if (response.status === 400)
-      throw new Error(data.error || "Некорректные данные поста");
-    if (response.status === 401) throw new Error("Нет авторизации");
-    return data;
-  } catch (error) {
-    throw new Error(`Failed to add post: ${error.message}`);
-  }
 }
 
-export async function likePost({ token, postId }) {
-  try {
-    const response = await fetch(`${postsHost}/${postId}/like`, {
-      method: "POST",
-      headers: { Authorization: token },
-    });
-    const data = await checkResponse(response);
-    if (response.status === 401) throw new Error("Нет авторизации");
-    return data;
-  } catch (error) {
-    throw new Error(`Failed to like post: ${error.message}`);
-  }
-}
-
-export async function dislikePost({ token, postId }) {
-  try {
-    const response = await fetch(`${postsHost}/${postId}/dislike`, {
-      method: "POST",
-      headers: { Authorization: token },
-    });
-    const data = await checkResponse(response);
-    if (response.status === 401) throw new Error("Нет авторизации");
-    return data;
-  } catch (error) {
-    throw new Error(`Failed to dislike post: ${error.message}`);
-  }
-}
-
-export async function registerUser({ login, password, name, imageUrl }) {
-  const body = { login, password, name };
-  if (imageUrl) body.imageUrl = imageUrl;
-  const response = await fetch(`${baseHost}/api/user`, {
+export function registerUser({ login, password, name, imageUrl }) {
+  return fetch(baseHost + "/api/user", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
-  });
-
-  if (response.status === 400) {
-    const data = await response.json();
-    throw new Error(data.error || "Некорректные данные регистрации");
-  }
-  if (!response.ok) {
-    throw new Error("Ошибка регистрации");
-  }
-  return response.json();
-}
-
-// ИСПРАВЛЕННАЯ ФУНКЦИЯ loginUser — отправляем данные как форму
-export async function loginUser({ login, password }) {
-  const params = new URLSearchParams();
-  params.append('login', login);
-  params.append('password', password);
-
-  const response = await fetch(`${baseHost}/api/user/login`, {
-    method: "POST",
-    // Явно указываем Content-Type
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: params,
-  });
-
-  if (!response.ok) {
-    let errorText;
-    try {
-      const data = await response.json();
-      errorText = data.error || "Неверный логин или пароль";
-    } catch (e) {
-      errorText = await response.text();
+    body: JSON.stringify({
+      login,
+      password,
+      name,
+      imageUrl,
+    }),
+  })
+  .then((response) => {
+    if (response.status === 400) {
+      return response.json().then((data) => {
+        throw new Error(data.error || "Такой пользователь уже существует");
+      });
     }
-    throw new Error(errorText);
-  }
-
-  return response.json();
-}
-
-export async function uploadImage({ file }) {
-  try {
-    const data = new FormData();
-    data.append("file", file);
-    const response = await fetch(`${baseHost}/api/upload/image`, {
-      method: "POST",
-      body: data,
-    });
-    const result = await checkResponse(response);
-    if (response.status === 400)
-      throw new Error(result.error || "Некорректный файл изображения");
-    if (response.status !== 200) throw new Error("Ошибка загрузки изображения");
-    return result;
-  } catch (error) {
-    throw new Error(`Failed to upload image: ${error.message}`);
-  }
-}
-
-export async function verifyToken({ token }) {
-  try {
-    const headers = { Authorization: token };
-    const response = await fetch(postsHost, { method: "GET", headers });
-    return response.status === 200;
-  } catch (error) {
-    console.error("verifyToken error:", error);
-    return false;
-  }
-}
-
-export async function deletePost({ token, postId }) {
-  try {
-    const response = await fetch(`${postsHost}/${postId}`, {
-      method: "DELETE",
-      headers: { Authorization: token },
-    });
-    if (!response.ok) throw new Error(`Ошибка удаления: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`Ошибка регистрации: ${response.status}`);
+    }
     return response.json();
-  } catch (error) {
-    throw new Error(`Failed to delete post: ${error.message}`);
-  }
+  });
+}
+
+export function loginUser({ login, password }) {
+  return fetch(baseHost + "/api/user/login", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      login,
+      password,
+    }),
+  })
+  .then((response) => {
+    if (response.status === 400) {
+      return response.json().then((data) => {
+        throw new Error(data.error || "Неверный логин или пароль");
+      });
+    }
+    if (!response.ok) {
+      throw new Error(`Ошибка входа: ${response.status}`);
+    }
+    return response.json();
+  });
+}
+
+// Загружает картинку в облако, возвращает url загруженной картинки
+export function uploadImage({ file }) {
+  const data = new FormData();
+  data.append("file", file);
+
+  return fetch(baseHost + "/api/upload/image", {
+    method: "POST",
+    body: data,
+  })
+  .then(checkResponse);
+}
+
+// Добавить новый пост
+export function addPost({ token, description, imageUrl }) {
+  return fetch(postsHost, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      description,
+      imageUrl,
+    }),
+  })
+  .then(checkResponse);
+}
+
+// Поставить лайк
+export function likePost({ token, postId }) {
+  return fetch(`${postsHost}/${postId}/like`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    },
+  })
+  .then(checkResponse);
+}
+
+// Убрать лайк
+export function dislikePost({ token, postId }) {
+  return fetch(`${postsHost}/${postId}/dislike`, {
+    method: "POST",
+    headers: {
+      Authorization: token,
+    },
+  })
+  .then(checkResponse);
+}
+
+// Удалить пост
+export function deletePost({ token, postId }) {
+  return fetch(`${postsHost}/${postId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: token,
+    },
+  })
+  .then(checkResponse);
 }
