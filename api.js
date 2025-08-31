@@ -1,4 +1,5 @@
-const personalKey = "prod";
+// api.js
+const personalKey = "your-unique-key";
 const baseHost = "https://wedev-api.sky.pro";
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
@@ -46,7 +47,10 @@ export async function addPost({ token, description, imageUrl }) {
       throw new Error("Описание или URL изображения не переданы");
     const response = await fetch(postsHost, {
       method: "POST",
-      headers: { Authorization: token },
+      headers: {
+        Authorization: token,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ description, imageUrl }),
     });
     const data = await checkResponse(response);
@@ -90,9 +94,11 @@ export async function dislikePost({ token, postId }) {
 export async function registerUser({ login, password, name, imageUrl }) {
   const body = { login, password, name };
   if (imageUrl) body.imageUrl = imageUrl;
-  console.log("Register request body:", body); // Логирование для отладки
   const response = await fetch(`${baseHost}/api/user`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(body),
   });
 
@@ -100,12 +106,18 @@ export async function registerUser({ login, password, name, imageUrl }) {
     const data = await response.json();
     throw new Error(data.error || "Некорректные данные регистрации");
   }
+  if (!response.ok) {
+    throw new Error("Ошибка регистрации");
+  }
   return response.json();
 }
 
 export async function loginUser({ login, password }) {
   const response = await fetch(`${baseHost}/api/user/login`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ login, password }),
   });
 
