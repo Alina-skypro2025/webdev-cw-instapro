@@ -1,29 +1,64 @@
+// Импортируем напрямую из index.js
 import { goToPage, logout, user } from "../index.js";
 import { ADD_POSTS_PAGE, AUTH_PAGE, POSTS_PAGE } from "../routes.js";
 
-export function renderHeaderComponent({ element, user, goToPage }) {
-  const html = `
-    <div class="page-header">
-      <h1 class="logo" data-go-to="${user ? POSTS_PAGE : AUTH_PAGE}">Instapro</h1>
+/**
+ * Компонент заголовка страницы.
+ * Этот компонент отображает шапку страницы с логотипом, кнопкой добавления постов/входа и кнопкой выхода (если пользователь авторизован).
+ * 
+ * @param {HTMLElement} params.element - HTML-элемент, в который будет рендериться заголовок.
+ * @returns {HTMLElement} Возвращает элемент заголовка после рендеринга.
+ */
+export function renderHeaderComponent({ element }) {
+  /**
+   * Рендерит содержимое заголовка.
+   */
+  element.innerHTML = `
+  <div class="page-header">
+      <h1 class="logo">instapro</h1>
+      <button class="header-button add-or-login-button">
       ${
         user
-          ? `
-        <button class="header-button add-post-sign" data-go-to="${ADD_POSTS_PAGE}"></button>
-        <button class="header-button logout-button">Выйти</button>
-      `
-          : `
-        <button class="header-button" data-go-to="${AUTH_PAGE}">Войти</button>
-      `
+          ? `<div title="Добавить пост" class="add-post-sign"></div>`
+          : "Войти"
       }
-    </div>`;
-  element.innerHTML = html;
+      </button>
+      ${
+        user
+          ? `<button title="${user.name}" class="header-button logout-button">Выйти</button>`
+          : ""
+      }  
+  </div>
+  `;
 
-  element.querySelectorAll("[data-go-to]").forEach((el) => {
-    el.addEventListener("click", () => goToPage(el.dataset.goTo));
+  /**
+   * Обработчик клика по кнопке "Добавить пост"/"Войти".
+   * Если пользователь авторизован, перенаправляет на страницу добавления постов.
+   * Если пользователь не авторизован, перенаправляет на страницу авторизации.
+   */
+  element
+    .querySelector(".add-or-login-button")
+    .addEventListener("click", () => {
+      if (user) {
+        goToPage(ADD_POSTS_PAGE);
+      } else {
+        goToPage(AUTH_PAGE);
+      }
+    });
+
+  /**
+   * Обработчик клика по логотипу.
+   * Перенаправляет на страницу с постами.
+   */
+  element.querySelector(".logo").addEventListener("click", () => {
+    goToPage(POSTS_PAGE);
   });
 
-  const logoutButton = element.querySelector(".logout-button");
-  if (logoutButton) {
-    logoutButton.addEventListener("click", logout);
-  }
+  /**
+   * Обработчик клика по кнопке "Выйти".
+   * Если кнопка существует (т.е. пользователь авторизован), вызывает функцию `logout`.
+   */
+  element.querySelector(".logout-button")?.addEventListener("click", logout);
+
+  return element;
 }
