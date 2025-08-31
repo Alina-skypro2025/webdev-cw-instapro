@@ -70,3 +70,41 @@ export function renderUserPostsPageComponent({
             )
             .join("")}
         </ul>
+      </div>
+    `;
+
+    appEl.innerHTML = appHtml;
+
+    renderHeaderComponent({
+      element: document.querySelector(".header-container"),
+      user,
+      goToPage,
+    });
+
+    for (let likeBtn of document.querySelectorAll(".like-button")) {
+      likeBtn.addEventListener("click", () => {
+        if (!user) {
+          showNotification("Авторизуйтесь для лайков");
+          goToPage(AUTH_PAGE);
+          return;
+        }
+        const postId = likeBtn.dataset.postId;
+        const post = posts.find((p) => p.id === postId);
+        const isLiked = post.isLiked;
+        const action = isLiked ? dislikePost : likePost;
+        action({ postId, token: `Bearer ${user.token}` })
+          .then((response) => {
+            const index = posts.findIndex((p) => p.id === postId);
+            posts[index] = response.post;
+            renderUserPosts(); // Перерисовываем компонент
+          })
+          .catch((error) => {
+            console.error(error);
+            showNotification("Ошибка при изменении лайка");
+          });
+      });
+    }
+  };
+
+  renderUserPosts();
+}
