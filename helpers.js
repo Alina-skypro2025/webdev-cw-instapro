@@ -1,27 +1,19 @@
+// helpers.js
 
-
-
+/**
+ * Сохраняет объект пользователя в localStorage.
+ * @param {Object|null} user - Объект пользователя для сохранения.
+ */
 export function saveUserToLocalStorage(user) {
-  // Исправлено: Проверка на null или undefined перед сериализацией.
-  if (user === null || user === undefined) {
-    console.warn("Helpers: Попытка сохранить пустого пользователя в localStorage.");
-    removeUserFromLocalStorage();
+  // Проверяем, что пользователь существует и содержит все необходимые поля
+  if (!user || !user.token || !user.name || user.id === undefined) {
+    console.warn("Helpers: Попытка сохранить некорректного пользователя в localStorage.", user);
     return;
   }
 
   try {
-    // Исправлено: Добавлена проверка, является ли user сериализуемым объектом.
-    if (typeof user === 'object' && user !== null && !Array.isArray(user)) {
-       // Исправлено: Проверяем наличие обязательных полей перед сохранением.
-       if (user.token && user.name && user.id !== undefined) { // id может быть 0
-         window.localStorage.setItem("user", JSON.stringify(user));
-         console.log("Helpers: Пользователь успешно сохранен в localStorage.");
-       } else {
-         console.warn("Helpers: Объект пользователя не содержит всех обязательных полей (token, name, id).", user);
-       }
-    } else {
-       console.warn("Helpers: Попытка сохранить некорректный объект пользователя.", user);
-    }
+    window.localStorage.setItem("user", JSON.stringify(user));
+    console.log("Helpers: Пользователь успешно сохранен в localStorage.");
   } catch (e) {
     console.error("Helpers: Ошибка сохранения пользователя в localStorage:", e);
   }
@@ -34,16 +26,15 @@ export function saveUserToLocalStorage(user) {
 export function getUserFromLocalStorage() {
   try {
     const userStr = window.localStorage.getItem("user");
-    // Исправлено: Проверка, что строка не пустая и не "null"/"undefined"
-    if (userStr && userStr !== "null" && userStr !== "undefined") {
+    if (userStr) {
       const user = JSON.parse(userStr);
-      // Исправлено: Дополнительная проверка корректности десериализованного объекта
-      if (user && typeof user === 'object' && user.token && user.name && user.id !== undefined) {
-         console.log("Helpers: Пользователь успешно получен из localStorage.");
-         return user;
+      // Проверяем, что пользователь содержит все необходимые поля
+      if (user && user.token && user.name && user.id !== undefined) {
+        console.log("Helpers: Пользователь успешно получен из localStorage.");
+        return user;
       } else {
-         console.warn("Helpers: Некорректные данные пользователя в localStorage.", user);
-         return null;
+        console.warn("Helpers: Некорректные данные пользователя в localStorage.", user);
+        return null;
       }
     }
     return null;
