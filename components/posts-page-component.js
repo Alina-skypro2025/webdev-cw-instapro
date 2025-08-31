@@ -1,137 +1,192 @@
 import { USER_POSTS_PAGE } from "../routes.js";
 import { renderHeaderComponent } from "./header-component.js";
-import { posts, goToPage, user } from "../index.js";
-import { formatDistanceToNow } from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js";
-import { ru } from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/locale/index.js";
 
-export function renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost }) {
-  /**
-   * @TODO: чтобы отформатировать дату создания поста в виде "19 минут назад"
-   * можно использовать https://date-fns.org/v2.29.3/docs/formatDistanceToNow  
-   */
+function simpleFormatDate(dateString) {
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const timeDiff = now - date;
+    const minutes = Math.floor(timeDiff / (1000 * 60));
+    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+    if (minutes < 1) {
+      return "менее минуты назад";
+    } else if (minutes < 60) {
+      return `${minutes} ${getMinutesWord(minutes)} назад`;
+    } else if (hours < 24) {
+      return `${hours} ${getHoursWord(hours)} назад`;
+    } else {
+      return `${days} ${getDaysWord(days)} назад`;
+    }
+  } catch (e) {
+    return "недавно";
+  }
+}
+
+// Функции для правильного склонения слов
+function getMinutesWord(minutes) {
+  const lastDigit = minutes % 10;
+  const lastTwoDigits = minutes % 100;
+  
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+    return "минут";
+  }
+  
+  switch (lastDigit) {
+    case 1: return "минуту";
+    case 2:
+    case 3:
+    case 4: return "минуты";
+    default: return "минут";
+  }
+}
+
+function getHoursWord(hours) {
+  const lastDigit = hours % 10;
+  const lastTwoDigits = hours % 100;
+  
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+    return "часов";
+  }
+  
+  switch (lastDigit) {
+    case 1: return "час";
+    case 2:
+    case 3:
+    case 4: return "часа";
+    default: return "часов";
+  }
+}
+
+function getDaysWord(days) {
+  const lastDigit = days % 10;
+  const lastTwoDigits = days % 100;
+  
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+    return "дней";
+  }
+  
+  switch (lastDigit) {
+    case 1: return "день";
+    case 2:
+    case 3:
+    case 4: return "дня";
+    default: return "дней";
+  }
+}
+
+export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleLike, isUserPostsPage = false }) {
+
+  let pageHeader = '';
+  if (isUserPostsPage && posts.length > 0) {
+    const firstPost = posts[0];
+    pageHeader = `
+      <div class="posts-user-header">
+        <img src="${firstPost.user.imageUrl}" class="posts-user-header__user-image" />
+        <div class="posts-user-header__user-name">${firstPost.user.name}</div>
+      </div>
+    `;
+  }
+
   const postsHtml = posts.map((post) => {
-    const createDate = new Date(post.createdAt);
-    const formattedDate = formatDistanceToNow(createDate, { addSuffix: true, locale: ru });
+    const isLiked = post.isLiked;
+    const likeImage = isLiked 
+      ? "./assets/images/like-active.svg" 
+      : "./assets/images/like-not-active.svg";
     
+    const imageSrc = post.imageUrl && post.imageUrl.trim() !== '' 
+      ? post.imageUrl 
+      : "./assets/images/default-image.jpg";
+
     return `
       <li class="post">
         <div class="post-header" data-user-id="${post.user.id}">
-            <img src="${post.user.imageUrl}" class="post-header__user-image">
-            <p class="post-header__user-name">${post.user.name}</p>
+          <img src="${post.user.imageUrl}" class="post-header__user-image" />
+          <p class="post-header__user-name">${post.user.name}</p>
         </div>
         <div class="post-image-container">
-          <img class="post-image" src="${post.imageUrl}" alt="Фото">
+          <img class="post-image" src="${imageSrc}" onerror="this.src='./assets/images/default-image.jpg'">
         </div>
         <div class="post-likes">
-          <button data-post-id="${post.id}" class="like-button">
-            <img src="${post.isLiked ? './assets/images/like-active.svg' : './assets/images/like-not-active.svg'}">
+          <button data-post-id="${post.id}" data-is-liked="${isLiked}" class="like-button">
+            <img src="${likeImage}">
           </button>
           <p class="post-likes-text">
             Нравится: <strong>${post.likes.length}</strong>
           </p>
-          ${user && user.id === post.user.id ? `<button data-post-id="${post.id}" class="delete-button">Удалить</button>` : ''}
         </div>
         <p class="post-text">
           <span class="user-name">${post.user.name}</span>
-          ${post.description}
+          ${post.description || ''}
         </p>
         <p class="post-date">
-          ${formattedDate}
+          ${simpleFormatDate(post.createdAt)}
         </p>
       </li>
     `;
-  }).join('');
+  }).join("");
 
   const appHtml = `
     <div class="page-container">
       <div class="header-container"></div>
+      ${pageHeader}
       <ul class="posts">
-        ${postsHtml}
+        ${postsHtml || '<p>Постов пока нет</p>'}
       </ul>
-    </div>`;
+    </div>
+  `;
 
   appEl.innerHTML = appHtml;
 
   renderHeaderComponent({
     element: document.querySelector(".header-container"),
+    user,
+    goToPage,
   });
 
-  // Обработчики кликов по пользователям
-  for (let userEl of document.querySelectorAll(".post-header")) {
+  // Обработчик клика по пользователю для перехода к его постам
+  document.querySelectorAll(".post-header").forEach(userEl => {
     userEl.addEventListener("click", () => {
-      goToPage(USER_POSTS_PAGE, {
-        userId: userEl.dataset.userId,
-      });
+      const userId = userEl.dataset.userId;
+      if (userId) {
+        goToPage(USER_POSTS_PAGE, {
+          userId: userEl.dataset.userId,
+        });
+      }
     });
-  }
+  });
 
-  // Обработчики лайков
-  for (let likeEl of document.querySelectorAll(".like-button")) {
-    likeEl.addEventListener("click", (event) => {
+  // Обработчик лайков
+  document.querySelectorAll('.like-button').forEach(button => {
+    button.addEventListener('click', (event) => {
       event.stopPropagation();
       
-      if (!user) {
-        alert("Необходимо авторизоваться для установки лайков");
-        goToPage(AUTH_PAGE);
-        return;
-      }
+      // Анимация лайка
+      button.classList.add('liked');
+      setTimeout(() => {
+        button.classList.remove('liked');
+      }, 300);
       
-      const postId = likeEl.dataset.postId;
-      const post = posts.find(p => p.id === postId);
+      const postId = button.dataset.postId;
+      const isLiked = button.dataset.isLiked === 'true';
       
-      if (post.isLiked) {
-        dislikePost({ token: `Bearer ${user.token}`, postId })
-          .then((updatedPost) => {
-            const postIndex = posts.findIndex(p => p.id === postId);
-            if (postIndex !== -1) {
-              posts[postIndex] = updatedPost.post;
-            }
-            renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost });
-          })
-          .catch((error) => {
-            console.error("Failed to dislike post:", error);
-            alert("Не удалось убрать лайк. Попробуйте позже.");
-          });
-      } else {
-        likePost({ token: `Bearer ${user.token}`, postId })
-          .then((updatedPost) => {
-            const postIndex = posts.findIndex(p => p.id === postId);
-            if (postIndex !== -1) {
-              posts[postIndex] = updatedPost.post;
-            }
-            renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost });
-          })
-          .catch((error) => {
-            console.error("Failed to like post:", error);
-            alert("Не удалось поставить лайк. Попробуйте позже.");
-          });
+      // Обновляем состояние кнопки
+      button.dataset.isLiked = !isLiked;
+      
+      // Вызываем функцию переключения лайка, если она существует
+      if (typeof toggleLike === 'function') {
+        toggleLike(postId, isLiked);
       }
     });
-  }
+  });
 
-  // Обработчики удаления постов
-  for (let deleteEl of document.querySelectorAll(".delete-button")) {
-    deleteEl.addEventListener("click", (event) => {
-      event.stopPropagation();
-      
-      const postId = deleteEl.dataset.postId;
-      
-      if (confirm("Вы действительно хотите удалить этот пост?")) {
-        deletePost({ token: `Bearer ${user.token}`, postId })
-          .then(() => {
-            // Удаляем пост из массива
-            const postIndex = posts.findIndex(p => p.id === postId);
-            if (postIndex !== -1) {
-              posts.splice(postIndex, 1);
-            }
-            renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost });
-            // alert("Пост успешно удален"); // Уведомление уже показывается через showNotification
-          })
-          .catch((error) => {
-            console.error("Failed to delete post:", error);
-            alert("Не удалось удалить пост. Попробуйте позже.");
-          });
-      }
-    });
+  // Анимация появления страницы
+  const container = document.querySelector('.page-container');
+  if (container) {
+    container.classList.add('page-transition');
+    setTimeout(() => {
+      container.classList.add('active');
+    }, 10);
   }
 }
