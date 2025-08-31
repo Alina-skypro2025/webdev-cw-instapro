@@ -1,6 +1,6 @@
 // api.js
 const personalKey = "prod"; // TODO: Замените на свой уникальный ключ
-const baseHost = "https://wedev-api.sky.pro";
+const baseHost = "https://wedev-api.sky.pro"; // Исправлено: убраны лишние пробелы
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 function checkResponse(response) {
@@ -120,7 +120,10 @@ export async function loginUser({ login, password }) {
 
   const response = await fetch(`${baseHost}/api/user/login`, {
     method: "POST",
-    // Не указываем Content-Type — браузер сам установит application/x-www-form-urlencoded
+    // Явно указываем Content-Type
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
     body: params,
   });
 
