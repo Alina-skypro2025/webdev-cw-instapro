@@ -1,4 +1,4 @@
-
+// routes.js
 export const AUTH_PAGE = "AUTH_PAGE";
 export const POSTS_PAGE = "POSTS_PAGE";
 export const ADD_POSTS_PAGE = "ADD_POSTS_PAGE";
