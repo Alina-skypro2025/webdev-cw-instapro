@@ -74,7 +74,7 @@ export function getUserPosts({ token, userId }) {
 export function registerUser({ login, password, name, imageUrl }) {
   return fetch(baseHost + "/api/user", {
     method: "POST",
-    // Убираем Content-Type: application/json
+    // Убираем Content-Type: application/json для этого эндпоинта
     headers: {},
     body: JSON.stringify({
       login,
@@ -105,7 +105,7 @@ export function registerUser({ login, password, name, imageUrl }) {
 export function loginUser({ login, password }) {
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
-    // Убираем Content-Type: application/json
+    // Убираем Content-Type: application/json для этого эндпоинта
     headers: {},
     body: JSON.stringify({
       login,
@@ -138,7 +138,8 @@ export function addPost({ token, description, imageUrl }) {
   return fetch(postsHost, {
     method: "POST",
     headers: {
-      // Убираем Content-Type: application/json
+      // Для POST с JSON-телом Content-Type нужен
+      "Content-Type": "application/json",
       Authorization: token,
     },
     body: JSON.stringify({
