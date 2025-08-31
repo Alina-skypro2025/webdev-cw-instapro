@@ -1,3 +1,4 @@
+
 import {
   getPosts,
   getUserPosts,
@@ -10,6 +11,7 @@ import {
 import { renderAddPostPageComponent } from "./components/add-post-page-component.js";
 import { renderAuthPageComponent } from "./components/auth-page-component.js";
 import { renderPostsPageComponent } from "./components/posts-page-component.js";
+import { renderUserPostsPageComponent } from "./components/user-posts-page-component.js";
 import { renderLoadingPageComponent } from "./components/loading-page-component.js";
 import {
   ADD_POSTS_PAGE,
@@ -29,7 +31,7 @@ export let page = null;
 export let posts = [];
 
 export const getToken = () =>
-  user && user.token ? `Bearer ${user.token}` : undefined; // Экспортируем getToken
+  user && user.token ? `Bearer ${user.token}` : undefined;
 
 export const setUser = (newUser) => {
   user = newUser;
@@ -41,7 +43,7 @@ export const setUser = (newUser) => {
 export const logout = () => {
   user = null;
   removeUserFromLocalStorage();
-  goToPage(POSTS_PAGE); // Изменено с AUTH_PAGE на POSTS_PAGE
+  goToPage(POSTS_PAGE);
 };
 
 export const showNotification = (message) => {
@@ -81,7 +83,7 @@ export const goToPage = (newPage, data = {}) => {
         .catch((error) => {
           console.error("Error fetching posts:", error);
           showNotification(`Ошибка загрузки постов: ${error.message}`);
-          page = POSTS_PAGE; // Остаёмся на POSTS_PAGE даже при ошибке
+          page = POSTS_PAGE;
           renderApp();
         });
       return;
@@ -110,7 +112,7 @@ export const goToPage = (newPage, data = {}) => {
                 showNotification(
                   `Ошибка загрузки постов пользователя: ${error.message}`
                 );
-                page = AUTH_PAGE;
+                page = POSTS_PAGE; // Возвращаемся к общей ленте при ошибке
                 renderApp();
               });
           })
@@ -120,8 +122,21 @@ export const goToPage = (newPage, data = {}) => {
             logout();
           });
       } else {
-        page = AUTH_PAGE;
-        renderApp();
+        // Для неавторизованных пользователей тоже показываем посты пользователя
+        getUserPosts({ token: undefined, userId: data.userId })
+          .then((newPosts) => {
+            page = USER_POSTS_PAGE;
+            posts = newPosts;
+            renderApp(data);
+          })
+          .catch((error) => {
+            console.error("Error fetching user posts:", error);
+            showNotification(
+              `Ошибка загрузки постов пользователя: ${error.message}`
+            );
+            page = POSTS_PAGE;
+            renderApp();
+          });
       }
       return;
     }
@@ -167,7 +182,7 @@ const renderApp = (data = {}) => {
     });
   }
 
-  if (page === POSTS_PAGE || page === USER_POSTS_PAGE) {
+  if (page === POSTS_PAGE) {
     return renderPostsPageComponent({
       appEl,
       posts,
@@ -177,6 +192,18 @@ const renderApp = (data = {}) => {
       dislikePost,
       deletePost,
       userId: data.userId,
+    });
+  }
+
+  if (page === USER_POSTS_PAGE) {
+    return renderUserPostsPageComponent({
+      appEl,
+      userId: data.userId,
+      posts,
+      user,
+      goToPage,
+      likePost,
+      dislikePost,
     });
   }
 
