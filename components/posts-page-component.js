@@ -1,137 +1,137 @@
-// components/posts-page-component.js
-import { renderHeaderComponent } from "./header-component.js";
 import { USER_POSTS_PAGE } from "../routes.js";
-import { getToken, showNotification } from "../index.js";
-import { AUTH_PAGE } from "../routes.js";
+import { renderHeaderComponent } from "./header-component.js";
+import { posts, goToPage, user } from "../index.js";
+import { formatDistanceToNow } from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/index.js";
+import { ru } from "https://cdn.jsdelivr.net/npm/date-fns@2.29.3/esm/locale/index.js";
 
-// Проверяем, доступна ли date-fns
-const formatDistanceToNow = window.dateFns ? window.dateFns.formatDistanceToNow : null;
-const ru = window.dateFns ? window.dateFns.ru : null;
+export function renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost }) {
+  /**
+   * @TODO: чтобы отформатировать дату создания поста в виде "19 минут назад"
+   * можно использовать https://date-fns.org/v2.29.3/docs/formatDistanceToNow  
+   */
+  const postsHtml = posts.map((post) => {
+    const createDate = new Date(post.createdAt);
+    const formattedDate = formatDistanceToNow(createDate, { addSuffix: true, locale: ru });
+    
+    return `
+      <li class="post">
+        <div class="post-header" data-user-id="${post.user.id}">
+            <img src="${post.user.imageUrl}" class="post-header__user-image">
+            <p class="post-header__user-name">${post.user.name}</p>
+        </div>
+        <div class="post-image-container">
+          <img class="post-image" src="${post.imageUrl}" alt="Фото">
+        </div>
+        <div class="post-likes">
+          <button data-post-id="${post.id}" class="like-button">
+            <img src="${post.isLiked ? './assets/images/like-active.svg' : './assets/images/like-not-active.svg'}">
+          </button>
+          <p class="post-likes-text">
+            Нравится: <strong>${post.likes.length}</strong>
+          </p>
+          ${user && user.id === post.user.id ? `<button data-post-id="${post.id}" class="delete-button">Удалить</button>` : ''}
+        </div>
+        <p class="post-text">
+          <span class="user-name">${post.user.name}</span>
+          ${post.description}
+        </p>
+        <p class="post-date">
+          ${formattedDate}
+        </p>
+      </li>
+    `;
+  }).join('');
 
-function escapeHTML(str) {
-  if (!str) return str;
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+  const appHtml = `
+    <div class="page-container">
+      <div class="header-container"></div>
+      <ul class="posts">
+        ${postsHtml}
+      </ul>
+    </div>`;
 
-export function renderPostsPageComponent({
-  appEl,
-  posts,
-  user,
-  goToPage,
-  likePost,
-  dislikePost,
-  deletePost,
-  userId,
-}) {
-  const renderPosts = () => {
-    const postsHtml = posts
-      .map((post) => {
-        // Форматирование даты
-        let createdAt = "Неизвестно";
-        if (formatDistanceToNow && ru) {
-          createdAt = formatDistanceToNow(new Date(post.createdAt), {
-            addSuffix: true,
-            locale: ru,
-          });
-        }
-        return `
-          <li class="post">
-            <div class="post-header" data-user-id="${post.user.id}">
-              <img src="${escapeHTML(post.user.imageUrl)}" class="post-header__user-image" alt="User avatar">
-              <p class="post-header__user-name">${escapeHTML(post.user.name)}</p>
-            </div>
-            <div class="post-image-container">
-              <img class="post-image" src="${escapeHTML(post.imageUrl)}" alt="Post image">
-            </div>
-            <div class="post-likes">
-              <button data-post-id="${post.id}" class="like-button">
-                <img src="./assets/images/like-${post.isLiked ? "active" : "not-active"}.svg">
-              </button>
-              <p class="post-likes-text">
-                Нравится: <strong>${post.likes.length}</strong>
-              </p>
-            </div>
-            <p class="post-text">
-              <span class="user-name">${escapeHTML(post.user.name)}</span>
-              ${escapeHTML(post.description)}
-            </p>
-            <p class="post-date">${createdAt}</p>
-            ${
-              user && post.user.id === user._id
-                ? `<button class="delete-button" data-post-id="${post.id}">Удалить</button>`
-                : ""
-            }
-          </li>`;
-      })
-      .join("");
+  appEl.innerHTML = appHtml;
 
-    const appHtml = `
-      <div class="page-container">
-        <div class="header-container"></div>
-        <ul class="posts">${postsHtml}</ul>
-      </div>`;
-    appEl.innerHTML = appHtml;
+  renderHeaderComponent({
+    element: document.querySelector(".header-container"),
+  });
 
-    renderHeaderComponent({
-      element: document.querySelector(".header-container"),
-      user,
-      goToPage,
+  // Обработчики кликов по пользователям
+  for (let userEl of document.querySelectorAll(".post-header")) {
+    userEl.addEventListener("click", () => {
+      goToPage(USER_POSTS_PAGE, {
+        userId: userEl.dataset.userId,
+      });
     });
+  }
 
-    for (const userEl of document.querySelectorAll(".post-header")) {
-      userEl.addEventListener("click", () => {
-        goToPage(USER_POSTS_PAGE, { userId: userEl.dataset.userId });
-      });
-    }
-
-    for (const likeButton of document.querySelectorAll(".like-button")) {
-      likeButton.addEventListener("click", () => {
-        const postId = likeButton.dataset.postId;
-        const post = posts.find((p) => p.id === postId);
-        const token = getToken();
-        const action = post.isLiked ? dislikePost : likePost;
-        if (!token) {
-          goToPage(AUTH_PAGE);
-          return;
-        }
-        action({ token, postId })
-          .then(({ post: updatedPost }) => {
-            const index = posts.findIndex((p) => p.id === postId);
-            posts[index] = updatedPost;
-            renderPosts(); // Перерисовываем компонент с обновленными данными
+  // Обработчики лайков
+  for (let likeEl of document.querySelectorAll(".like-button")) {
+    likeEl.addEventListener("click", (event) => {
+      event.stopPropagation();
+      
+      if (!user) {
+        alert("Необходимо авторизоваться для установки лайков");
+        goToPage(AUTH_PAGE);
+        return;
+      }
+      
+      const postId = likeEl.dataset.postId;
+      const post = posts.find(p => p.id === postId);
+      
+      if (post.isLiked) {
+        dislikePost({ token: `Bearer ${user.token}`, postId })
+          .then((updatedPost) => {
+            const postIndex = posts.findIndex(p => p.id === postId);
+            if (postIndex !== -1) {
+              posts[postIndex] = updatedPost.post;
+            }
+            renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost });
           })
           .catch((error) => {
-            console.error("Error liking post:", error);
-            showNotification(`Ошибка лайка: ${error.message}`);
+            console.error("Failed to dislike post:", error);
+            alert("Не удалось убрать лайк. Попробуйте позже.");
           });
-      });
-    }
+      } else {
+        likePost({ token: `Bearer ${user.token}`, postId })
+          .then((updatedPost) => {
+            const postIndex = posts.findIndex(p => p.id === postId);
+            if (postIndex !== -1) {
+              posts[postIndex] = updatedPost.post;
+            }
+            renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost });
+          })
+          .catch((error) => {
+            console.error("Failed to like post:", error);
+            alert("Не удалось поставить лайк. Попробуйте позже.");
+          });
+      }
+    });
+  }
 
-    for (const deleteButton of document.querySelectorAll(".delete-button")) {
-      deleteButton.addEventListener("click", () => {
-        const postId = deleteButton.dataset.postId;
-        if (!confirm("Вы точно хотите удалить пост?")) return;
-        deleteButton.disabled = true;
-        deletePost({ token: getToken(), postId })
+  // Обработчики удаления постов
+  for (let deleteEl of document.querySelectorAll(".delete-button")) {
+    deleteEl.addEventListener("click", (event) => {
+      event.stopPropagation();
+      
+      const postId = deleteEl.dataset.postId;
+      
+      if (confirm("Вы действительно хотите удалить этот пост?")) {
+        deletePost({ token: `Bearer ${user.token}`, postId })
           .then(() => {
-            posts = posts.filter((p) => p.id !== postId);
-            renderPosts();
-            showNotification("Пост удалён");
+            // Удаляем пост из массива
+            const postIndex = posts.findIndex(p => p.id === postId);
+            if (postIndex !== -1) {
+              posts.splice(postIndex, 1);
+            }
+            renderPostsPageComponent({ appEl, posts, user, goToPage, likePost, dislikePost, deletePost });
+            alert("Пост успешно удален");
           })
           .catch((error) => {
-            console.error("Error deleting post:", error);
-            showNotification(`Ошибка удаления поста: ${error.message}`);
-          })
-          .finally(() => {
-            deleteButton.disabled = false;
+            console.error("Failed to delete post:", error);
+            alert("Не удалось удалить пост. Попробуйте позже.");
           });
-      });
-    }
-  };
-  renderPosts();
+      }
+    });
+  }
 }
