@@ -126,16 +126,31 @@ export async function loginUser({ login, password }) {
   });
 
   if (!response.ok) {
-    // Пытаемся получить JSON с ошибкой, если не получится - общий текст
-    try {
-      const data = await response.json();
-      throw new Error(data.error || "Неверный логин или пароль");
-    } catch (e) {
-      // Если ответ не JSON, используем текст ошибки
-      const text = await response.text();
-      throw new Error(text || "Ошибка авторизации");
+    // Пытаемся получить данные из ответа
+    let errorText;
+    const contentType = response.headers.get("content-type");
+    
+    if (contentType && contentType.includes("application/json")) {
+      // Если ответ в формате JSON
+      try {
+        const data = await response.json();
+        errorText = data.error || "Ошибка авторизации";
+      } catch (e) {
+        // Если не удалось распарсить JSON
+        errorText = "Ошибка авторизации (некорректный ответ)";
+      }
+    } else {
+      // Если ответ не JSON - считываем как текст
+      try {
+        errorText = await response.text();
+      } catch (e) {
+        errorText = "Ошибка авторизации";
+      }
     }
+    
+    throw new Error(errorText);
   }
+
   return response.json();
 }
 
