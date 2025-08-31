@@ -45,6 +45,15 @@ export const logout = () => {
   goToPage(POSTS_PAGE);
 };
 
+// Функция для показа уведомлений
+export const showNotification = (message) => {
+  const notification = document.createElement("div");
+  notification.className = "notification";
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 3000);
+};
+
 /**
  * Включает страницу приложения
  */
@@ -111,15 +120,6 @@ export const goToPage = (newPage, data) => {
   throw new Error("страницы не существует");
 };
 
-// Функция для показа уведомлений
-export const showNotification = (message) => {
-  const notification = document.createElement("div");
-  notification.className = "notification";
-  notification.textContent = message;
-  document.body.appendChild(notification);
-  setTimeout(() => notification.remove(), 3000);
-};
-
 const renderApp = (data = {}) => {
   const appEl = document.getElementById("app");
   
@@ -140,7 +140,7 @@ const renderApp = (data = {}) => {
         goToPage(POSTS_PAGE);
       },
       user,
-      goToPage,
+      goToPage, // Передаем goToPage в компонент
     });
   }
 
