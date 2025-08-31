@@ -72,7 +72,6 @@ export const goToPage = (newPage, data) => {
     ].includes(newPage)
   ) {
     if (newPage === ADD_POSTS_PAGE) {
-      // Только авторизованные пользователи могут добавлять посты
       page = user ? ADD_POSTS_PAGE : AUTH_PAGE;
       return renderApp();
     }
@@ -121,7 +120,6 @@ export const goToPage = (newPage, data) => {
 export const toggleLike = (postId, isLiked) => {
   const token = getToken();
   
-  // Неавторизованные пользователи не могут ставить лайки
   if (!token) {
     const appEl = document.getElementById("app");
     const container = appEl.querySelector('.page-container');
@@ -196,7 +194,6 @@ const renderApp = () => {
   }
 
   if (page === ADD_POSTS_PAGE) {
-    // Проверка авторизации перед отображением страницы добавления поста
     if (!user) {
       goToPage(AUTH_PAGE);
       return;
@@ -211,7 +208,6 @@ const renderApp = () => {
           return;
         }
         
-        // Проверка наличия данных
         if (!description.trim()) {
           alert("Введите описание поста");
           return;
