@@ -4,9 +4,9 @@ import { USER_POSTS_PAGE } from "../routes.js";
 import { getToken, showNotification } from "../index.js";
 import { AUTH_PAGE } from "../routes.js";
 
-// Используем date-fns из глобальной переменной
-const { formatDistanceToNow } = window.dateFns;
-const { ru } = window.dateFns;
+// Проверяем, доступна ли date-fns
+const formatDistanceToNow = window.dateFns ? window.dateFns.formatDistanceToNow : null;
+const ru = window.dateFns ? window.dateFns.ru : null;
 
 function escapeHTML(str) {
   if (!str) return str;
@@ -31,10 +31,14 @@ export function renderPostsPageComponent({
   const renderPosts = () => {
     const postsHtml = posts
       .map((post) => {
-        const createdAt = formatDistanceToNow(new Date(post.createdAt), {
-          addSuffix: true,
-          locale: ru,
-        });
+        // Форматирование даты
+        let createdAt = "Неизвестно";
+        if (formatDistanceToNow && ru) {
+          createdAt = formatDistanceToNow(new Date(post.createdAt), {
+            addSuffix: true,
+            locale: ru,
+          });
+        }
         return `
           <li class="post">
             <div class="post-header" data-user-id="${post.user.id}">
@@ -121,13 +125,4 @@ export function renderPostsPageComponent({
           })
           .catch((error) => {
             console.error("Error deleting post:", error);
-            showNotification(`Ошибка удаления поста: ${error.message}`);
-          })
-          .finally(() => {
-            deleteButton.disabled = false;
-          });
-      });
-    }
-  };
-  renderPosts();
-}
+            showNotification(`Ошибка удаления поста: ${error
