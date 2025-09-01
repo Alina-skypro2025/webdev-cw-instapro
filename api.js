@@ -1,6 +1,8 @@
 // api.js
+// Базовый URL API из документации
 const personalKey = "prod";
 const baseHost = "https://wedev-api.sky.pro";
+// Адрес для работы с постами
 const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
 
 /**
@@ -10,6 +12,7 @@ const postsHost = `${baseHost}/api/v1/${personalKey}/instapro`;
  * @returns {Promise<Array>} - Массив постов.
  */
 export function getPosts({ token }) {
+  // Заголовки запроса. Для GET не нужно указывать Content-Type.
   const headers = {};
 
   // Если токен предоставлен, добавляем его в заголовки
@@ -28,6 +31,7 @@ export function getPosts({ token }) {
       return response.json();
     })
     .then((data) => {
+      // API возвращает объект { posts: [...] }
       return data.posts;
     });
 }
@@ -40,6 +44,7 @@ export function getPosts({ token }) {
  * @returns {Promise<Array>} - Массив постов пользователя.
  */
 export function getUserPosts({ token, userId }) {
+  // Заголовки запроса. Для GET не нужно указывать Content-Type.
   const headers = {};
 
   // Если токен предоставлен, добавляем его в заголовки
@@ -47,7 +52,10 @@ export function getUserPosts({ token, userId }) {
     headers.Authorization = token;
   }
 
-  return fetch(`${postsHost}/user-posts/${userId}`, {
+  // Формируем URL для получения постов конкретного пользователя
+  const url = `${postsHost}/user-posts/${userId}`;
+
+  return fetch(url, {
     method: "GET",
     headers,
   })
@@ -58,6 +66,7 @@ export function getUserPosts({ token, userId }) {
       return response.json();
     })
     .then((data) => {
+      // API возвращает объект { posts: [...] }
       return data.posts;
     });
 }
@@ -72,10 +81,12 @@ export function getUserPosts({ token, userId }) {
  * @returns {Promise<Object>} - Данные нового пользователя.
  */
 export function registerUser({ login, password, name, imageUrl }) {
+  // Для POST с JSON-телом заголовок Content-Type НУЖЕН
   return fetch(baseHost + "/api/user", {
     method: "POST",
-    // Убираем Content-Type: application/json для этого эндпоинта
-    headers: {},
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       login,
       password,
@@ -84,13 +95,18 @@ export function registerUser({ login, password, name, imageUrl }) {
     }),
   }).then((response) => {
     if (response.status === 400) {
+      // Обрабатываем ошибку 400 (например, пользователь уже существует)
+      // Получаем сообщение об ошибке от сервера
       return response.json().then((errorData) => {
-         throw new Error(errorData?.error || "Такой пользователь уже существует");
+        // Используем сообщение от сервера, если оно есть, иначе дефолтное
+        throw new Error(errorData?.error || "Такой пользователь уже существует");
       });
     }
     if (!response.ok) {
+      // Обрабатываем другие HTTP ошибки
       throw new Error("Ошибка при регистрации");
     }
+    // Если всё ОК, возвращаем данные пользователя
     return response.json();
   });
 }
@@ -103,23 +119,30 @@ export function registerUser({ login, password, name, imageUrl }) {
  * @returns {Promise<Object>} - Данные авторизованного пользователя.
  */
 export function loginUser({ login, password }) {
+  // Для POST с JSON-телом заголовок Content-Type НУЖЕН
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
-    // Убираем Content-Type: application/json для этого эндпоинта
-    headers: {},
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       login,
       password,
     }),
   }).then((response) => {
     if (response.status === 400) {
+      // Обрабатываем ошибку 400 (например, неверный логин или пароль)
+      // Получаем сообщение об ошибке от сервера
       return response.json().then((errorData) => {
-         throw new Error(errorData?.error || "Неверный логин или пароль");
+        // Используем сообщение от сервера, если оно есть, иначе дефолтное
+        throw new Error(errorData?.error || "Неверный логин или пароль");
       });
     }
     if (!response.ok) {
+      // Обрабатываем другие HTTP ошибки
       throw new Error("Ошибка при входе");
     }
+    // Если всё ОК, возвращаем данные пользователя
     return response.json();
   });
 }
@@ -135,11 +158,13 @@ export function loginUser({ login, password }) {
 export function addPost({ token, description, imageUrl }) {
   console.log("API: Отправляем данные на сервер:", { description, imageUrl });
 
+  // ВАЖНО: Для этого конкретного эндпоинта НЕ НУЖНО указывать Content-Type: application/json
+  // Согласно ошибке сервера: "В заголовке передан content-type: application/json, но эта API не умеет работать с этим заголовком, уберите его"
   return fetch(postsHost, {
     method: "POST",
     headers: {
-      // Для POST с JSON-телом Content-Type нужен
-      "Content-Type": "application/json",
+      // Убираем "Content-Type": "application/json",
+      // Токен авторизации обязателен
       Authorization: token,
     },
     body: JSON.stringify({
@@ -148,17 +173,23 @@ export function addPost({ token, description, imageUrl }) {
     }),
   }).then((response) => {
     if (response.status === 401) {
+      // Обрабатываем ошибку 401 (нет авторизации)
       throw new Error("Нет авторизации");
     }
     if (response.status === 400) {
+      // Обрабатываем ошибку 400 (например, не переданы обязательные данные)
+      // Получаем детальное сообщение об ошибке от сервера
       return response.json().then((errorData) => {
         console.error("API: Ошибка 400 от сервера:", errorData);
+        // Используем сообщение от сервера, если оно есть, иначе дефолтное
         throw new Error(errorData?.error || "Не переданы обязательные данные");
       });
     }
     if (!response.ok) {
+      // Обрабатываем другие HTTP ошибки
       throw new Error("Ошибка при добавлении поста");
     }
+    // Если всё ОК, возвращаем результат
     return response.json();
   });
 }
@@ -170,6 +201,8 @@ export function addPost({ token, description, imageUrl }) {
  * @returns {Promise<Object>} - Данные загрузки (включая URL).
  */
 export function uploadImage({ file }) {
+  // Для загрузки файлов используется FormData, Content-Type НЕ нужен
+  // (браузер сам установит правильный Content-Type с boundary)
   const data = new FormData();
   data.append("file", file);
 
@@ -182,6 +215,10 @@ export function uploadImage({ file }) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return response.json();
+    })
+    .then((uploadResult) => {
+      console.log("API: Полный ответ от uploadImage:", uploadResult);
+      return uploadResult;
     });
 }
 
@@ -193,18 +230,23 @@ export function uploadImage({ file }) {
  * @returns {Promise<Object>} - Обновленный пост.
  */
 export function likePost({ token, postId }) {
+  // Для POST без тела заголовок Content-Type НЕ нужен
   return fetch(`${postsHost}/${postId}/like`, {
     method: "POST",
     headers: {
+      // Токен авторизации обязателен
       Authorization: token,
     },
   }).then((response) => {
     if (response.status === 401) {
+      // Обрабатываем ошибку 401 (нет авторизации)
       throw new Error("Нет авторизации");
     }
     if (!response.ok) {
+      // Обрабатываем другие HTTP ошибки
       throw new Error("Ошибка при лайке");
     }
+    // Если всё ОК, возвращаем обновленный пост
     return response.json();
   });
 }
@@ -217,18 +259,23 @@ export function likePost({ token, postId }) {
  * @returns {Promise<Object>} - Обновленный пост.
  */
 export function dislikePost({ token, postId }) {
+  // Для POST без тела заголовок Content-Type НЕ нужен
   return fetch(`${postsHost}/${postId}/dislike`, {
     method: "POST",
     headers: {
+      // Токен авторизации обязателен
       Authorization: token,
     },
   }).then((response) => {
     if (response.status === 401) {
+      // Обрабатываем ошибку 401 (нет авторизации)
       throw new Error("Нет авторизации");
     }
     if (!response.ok) {
+      // Обрабатываем другие HTTP ошибки
       throw new Error("Ошибка при дизлайке");
     }
+    // Если всё ОК, возвращаем обновленный пост
     return response.json();
   });
 }
