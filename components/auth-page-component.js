@@ -1,161 +1,265 @@
-// auth-page-component.js
+// components/auth-page-component.js
+import { loginUser, registerUser } from "../api.js";
+import { renderHeaderComponent } from "./header-component.js";
 import { renderUploadImageComponent } from "./upload-image-component.js";
-import { getToken } from "../index.js";
 
+/**
+ * Компонент страницы авторизации/регистрации.
+ * @param {Object} params - Параметры компонента.
+ * @param {HTMLElement} params.appEl - Корневой элемент приложения.
+ * @param {Function} params.setUser - Функция для установки данных пользователя после успешного входа/регистрации.
+ * @param {Object|null} params.user - Текущий пользователь (не используется напрямую здесь, но передается в header).
+ * @param {Function} params.goToPage - Функция для навигации между страницами.
+ */
 export function renderAuthPageComponent({ appEl, setUser, user, goToPage }) {
-  const appHtml = `
-    <div class="page-container">
-      <div class="header-container"></div>
-      <div class="form">
-        <h3 class="form-title">Регистрация в Instapro</h3>
-        <div class="form-inputs">
-          <div class="upload-image-container">
-            <div id="upload-image-container"></div>
+  /**
+   * Флаг, указывающий текущий режим формы.
+   * Если `true`, форма находится в режиме входа. Если `false`, в режиме регистрации.
+   * @type {boolean}
+   */
+  let isLoginMode = true;
+
+  /**
+   * URL изображения, загруженного пользователем при регистрации.
+   * Используется только в режиме регистрации.
+   * @type {string}
+   */
+  let imageUrl = "";
+
+  /**
+   * Рендерит форму авторизации или регистрации.
+   * В зависимости от значения `isLoginMode` отображает соответствующий интерфейс.
+   */
+  const renderForm = () => {
+    const appHtml = `
+      <div class="page-container">
+          <div class="header-container"></div>
+          <div class="form">
+              <h3 class="form-title">
+                ${
+                  isLoginMode
+                    ? "Вход в&nbsp;Instapro"
+                    : "Регистрация в&nbsp;Instapro"
+                }
+              </h3>
+              <div class="form-inputs">
+                  ${
+                    !isLoginMode
+                      ? `
+                      <div class="upload-image-container">
+                        <div id="upload-image-conrainer"></div> <!-- Исправлен ID -->
+                      </div>
+                      <input type="text" id="name-input" class="input" placeholder="Имя" />
+                      `
+                      : ""
+                  }
+                  <input type="text" id="login-input" class="input" placeholder="Логин" />
+                  <input type="password" id="password-input" class="input" placeholder="Пароль" />
+                  <div class="form-error" id="form-error" style="display: none;"></div> <!-- Изначально скрыт -->
+                  <button class="button" id="login-button">${
+                    isLoginMode ? "Войти" : "Зарегистрироваться"
+                  }</button>
+              </div>
+              <div class="form-footer">
+                <p class="form-footer-title">
+                  ${isLoginMode ? "Нет аккаунта?" : "Уже есть аккаунт?"}
+                  <button class="link-button" id="toggle-button">
+                    ${isLoginMode ? "Зарегистрироваться." : "Войти."}
+                  </button>
+                </p>
+              </div>
           </div>
-          <label>
-            Логин
-            <input type="text" id="login-input" />
-          </label>
-          <label>
-            Имя пользователя
-            <input type="text" id="name-input" />
-          </label>
-          <label>
-            Пароль
-            <input type="password" id="password-input" />
-          </label>
-          <div class="form-error" id="form-error"></div>
-        </div>
-        <div class="form-footer">
-          <button class="button" id="register-button">Зарегистрироваться</button>
-        </div>
-      </div>
-    </div>
-  `;
+      </div>    
+    `;
 
-  appEl.innerHTML = appHtml;
+    appEl.innerHTML = appHtml;
 
-  // Получаем элементы DOM
-  const uploadContainerElement = document.getElementById("upload-image-container");
-  const loginInput = document.getElementById("login-input");
-  const nameInput = document.getElementById("name-input");
-  const passwordInput = document.getElementById("password-input");
-  const errorElement = document.getElementById("form-error");
-  const registerButton = document.getElementById("register-button");
-
-  // Проверяем существование всех необходимых элементов
-  if (!uploadContainerElement || !loginInput || !nameInput || !passwordInput || !errorElement || !registerButton) {
-    console.error("AuthPageComponent: Один или несколько необходимых элементов формы не найдены.");
-    return;
-  }
-
-  // --- Логика отображения/скрытия ошибки ---
-  /**
-   * Показать сообщение об ошибке.
-   * @param {string} message - Текст сообщения об ошибке.
-   */
-  const showError = (message) => {
-    errorElement.textContent = message;
-    errorElement.style.display = 'block'; // Делаем элемент видимым
-  };
-
-  /**
-   * Скрыть сообщение об ошибке.
-   */
-  const hideError = () => {
-    errorElement.textContent = "";
-    errorElement.style.display = 'none'; // Скрываем элемент
-  };
-
-  // --- Рендер компонента загрузки изображения ---
-  renderUploadImageComponent({
-    element: uploadContainerElement,
-    // Callback, который вызывается при изменении URL изображения
-    onImageUrl: (imageUrl) => {
-      console.log("AuthPageComponent: URL изображения обновлен:", imageUrl);
-      // Если изображение загружено, скрываем ошибку "Не выбрана фотография"
-      if (imageUrl && errorElement.textContent === "Не выбрана фотография") {
-         hideError();
+    /**
+     * Показать сообщение об ошибке.
+     * @param {string} message - Текст сообщения об ошибке.
+     */
+    const showError = (message) => {
+      const errorElement = appEl.querySelector(".form-error");
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
       }
-    },
-  });
+    };
 
-  // --- Обработчики событий для полей ввода ---
-  // Добавляем обработчик события input для поля логина
-  loginInput.addEventListener("input", () => {
-    // Если пользователь начал вводить логин и ранее была ошибка "Неверный логин", скрываем её
-    if (loginInput.value.trim() !== "" && errorElement.textContent === "Неверный логин") {
-      hideError();
-    }
-  });
+    /**
+     * Скрыть сообщение об ошибке.
+     */
+    const hideError = () => {
+      const errorElement = appEl.querySelector(".form-error");
+      if (errorElement) {
+        errorElement.textContent = "";
+        errorElement.style.display = 'none';
+      }
+    };
 
-  // Добавляем обработчик события input для поля имени
-  nameInput.addEventListener("input", () => {
-    // Если пользователь начал вводить имя и ранее была ошибка "Неверное имя", скрываем её
-    if (nameInput.value.trim() !== "" && errorElement.textContent === "Неверное имя") {
-      hideError();
-    }
-  });
+    // Рендерим заголовок страницы
+    renderHeaderComponent({
+      element: document.querySelector(".header-container"),
+      user, // Передаем текущего пользователя (может быть null)
+      goToPage, // Передаем функцию навигации
+    });
 
-  // Добавляем обработчик события input для поля пароля
-  passwordInput.addEventListener("input", () => {
-    // Если пользователь начал вводить пароль и ранее была ошибка "Неверный пароль", скрываем её
-    if (passwordInput.value.trim() !== "" && errorElement.textContent === "Неверный пароль") {
-      hideError();
-    }
-  });
-
-  // --- Обработчик события для кнопки "Зарегистрироваться" ---
-  // Добавляем обработчик события click для кнопки "Зарегистрироваться"
-  registerButton.addEventListener("click", () => {
-    // Получаем значения полей и убираем лишние пробелы
-    const login = loginInput.value.trim();
-    const name = nameInput.value.trim();
-    const password = passwordInput.value.trim();
-
-    // Сначала скрываем любую предыдущую ошибку
-    hideError();
-
-    // Проверяем обязательные поля
-    if (!login) {
-      showError("Введите логин");
-      loginInput.focus();
-      return;
+    // Если режим регистрации, рендерим компонент загрузки изображения
+    const uploadImageContainer = appEl.querySelector(".upload-image-container");
+    if (uploadImageContainer && !isLoginMode) {
+      // Исправлен ID контейнера (был опечатка: "conrainer" вместо "container")
+      const uploadImageInnerContainer = appEl.querySelector("#upload-image-conrainer");
+      if (uploadImageInnerContainer) {
+        renderUploadImageComponent({
+          element: uploadImageInnerContainer,
+          onImageUrl: (newImageUrl) => { // Используем правильное имя параметра
+            console.log("AuthPage: URL изображения обновлен:", newImageUrl);
+            imageUrl = newImageUrl;
+            
+            // Если изображение загружено и была ошибка "Не выбрана фотография", скрываем её
+            const errorElement = appEl.querySelector(".form-error");
+            if (imageUrl && errorElement && errorElement.textContent === "Не выбрана фотография") {
+               hideError();
+            }
+          },
+        });
+      }
     }
 
-    if (!name) {
-      showError("Введите имя пользователя");
-      nameInput.focus();
-      return;
-    }
+    // Обработка клика на кнопку входа/регистрации
+    const loginButton = document.getElementById("login-button");
+    if (loginButton) {
+      loginButton.addEventListener("click", () => {
+        hideError(); // Скрываем предыдущие ошибки
 
-    if (!password) {
-      showError("Введите пароль");
-      passwordInput.focus();
-      return;
-    }
+        if (isLoginMode) {
+          // Обработка входа
+          const login = document.getElementById("login-input")?.value?.trim();
+          const password = document.getElementById("password-input")?.value?.trim();
 
-    // Проверка токена авторизации (необходима для регистрации)
-    const token = getToken();
-    if (!token) {
-      showError("Ошибка авторизации. Пожалуйста, войдите снова.");
-      console.warn("AuthPageComponent: Попытка регистрации без токена.");
-      return;
-    }
+          if (!login) {
+            showError("Введите логин");
+            return;
+          }
 
-    // Вызываем API для регистрации пользователя
-    registerUser({ login, password, name })
-      .then((result) => {
-        console.log("AuthPageComponent: Пользователь успешно зарегистрирован:", result);
-        // Устанавливаем нового пользователя
-        setUser(result.user);
-        // Перенаправляем на главную страницу
-        goToPage(POSTS_PAGE);
-      })
-      .catch((error) => {
-        console.error("AuthPageComponent: Ошибка при регистрации:", error);
-        // Показываем сообщение пользователю
-        showError(error.message);
+          if (!password) {
+            showError("Введите пароль");
+            return;
+          }
+
+          loginUser({ login, password })
+            .then((userData) => {
+              console.log("AuthPage: Успешный вход:", userData);
+              setUser(userData.user); // Устанавливаем пользователя из ответа API
+            })
+            .catch((error) => {
+              console.warn("AuthPage: Ошибка входа:", error);
+              showError(error.message);
+            });
+        } else {
+          // Обработка регистрации
+          const login = document.getElementById("login-input")?.value?.trim();
+          const name = document.getElementById("name-input")?.value?.trim();
+          const password = document.getElementById("password-input")?.value?.trim();
+
+          if (!name) {
+            showError("Введите имя");
+            return;
+          }
+
+          if (!login) {
+            showError("Введите логин");
+            return;
+          }
+
+          if (!password) {
+            showError("Введите пароль");
+            return;
+          }
+
+          if (!imageUrl) {
+            showError("Не выбрана фотография");
+            return;
+          }
+
+          registerUser({ login, password, name, imageUrl })
+            .then((userData) => {
+              console.log("AuthPage: Успешная регистрация:", userData);
+              setUser(userData.user); // Устанавливаем пользователя из ответа API
+            })
+            .catch((error) => {
+              console.warn("AuthPage: Ошибка регистрации:", error);
+              showError(error.message);
+            });
+        }
       });
-  });
+    }
+
+    // Обработка переключения режима (вход ↔ регистрация)
+    const toggleButton = document.getElementById("toggle-button");
+    if (toggleButton) {
+      toggleButton.addEventListener("click", () => {
+        isLoginMode = !isLoginMode;
+        renderForm(); // Перерисовываем форму с новым режимом
+      });
+    }
+    
+    // --- Добавляем обработчики для скрытия ошибок при вводе ---
+    if (!isLoginMode) {
+        // Режим регистрации
+        const nameInput = document.getElementById("name-input");
+        const loginInputReg = document.getElementById("login-input");
+        const passwordInputReg = document.getElementById("password-input");
+        
+        if (nameInput) {
+            nameInput.addEventListener("input", () => {
+                const errorElement = appEl.querySelector(".form-error");
+                if (errorElement && errorElement.textContent === "Введите имя") {
+                    hideError();
+                }
+            });
+        }
+        if (loginInputReg) {
+            loginInputReg.addEventListener("input", () => {
+                const errorElement = appEl.querySelector(".form-error");
+                if (errorElement && errorElement.textContent === "Введите логин") {
+                    hideError();
+                }
+            });
+        }
+        if (passwordInputReg) {
+            passwordInputReg.addEventListener("input", () => {
+                const errorElement = appEl.querySelector(".form-error");
+                if (errorElement && errorElement.textContent === "Введите пароль") {
+                    hideError();
+                }
+            });
+        }
+        // Обработчик для ошибки "Не выбрана фотография" уже добавлен выше в onImageUrl
+    } else {
+        // Режим входа
+        const loginInputLogin = document.getElementById("login-input");
+        const passwordInputLogin = document.getElementById("password-input");
+        
+        if (loginInputLogin) {
+            loginInputLogin.addEventListener("input", () => {
+                const errorElement = appEl.querySelector(".form-error");
+                if (errorElement && errorElement.textContent === "Введите логин") {
+                    hideError();
+                }
+            });
+        }
+        if (passwordInputLogin) {
+            passwordInputLogin.addEventListener("input", () => {
+                const errorElement = appEl.querySelector(".form-error");
+                if (errorElement && errorElement.textContent === "Введите пароль") {
+                    hideError();
+                }
+            });
+        }
+    }
+  };
+
+  // Инициализация формы
+  renderForm();
 }
