@@ -1,4 +1,4 @@
-
+// index.js
 import {
   getPosts,
   addPost,

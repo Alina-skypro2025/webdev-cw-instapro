@@ -1,13 +1,19 @@
-
+// components/add-post-page-component.js
 import { renderUploadImageComponent } from "./upload-image-component.js";
+// Импортируем getToken для дополнительной проверки (не обязательно, так как проверка есть в index.js)
+// import { getToken } from "../index.js"; // Можно убрать, если не используется напрямую здесь
 
-import { getToken } from "../index.js";
-
-
-
+/**
+ * Рендер компонента страницы добавления поста.
+ * @param {Object} params - Параметры компонента.
+ * @param {HTMLElement} params.appEl - Корневой элемент приложения.
+ * @param {Function} params.onAddPostClick - Callback для обработки клика по кнопке "Добавить".
+ */
 export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
+  // Переменная для хранения URL загруженного изображения
   let currentImageUrl = "";
 
+  // HTML разметка компонента
   const appHtml = `
     <div class="page-container">
       <div class="header-container"></div>
@@ -19,9 +25,10 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
           </div>
           <label>
             Описание поста
-            <textarea class="form-textarea" id="post-description"></textarea>
+            <textarea class="form-textarea" id="post-description" placeholder="Подпись к фото..."></textarea>
           </label>
-          <div class="form-error" id="form-error"></div>
+          <!-- Элемент ошибки изначально скрыт -->
+          <div class="form-error" id="form-error" style="display: none;"></div>
         </div>
         <div class="form-footer">
           <button class="button" id="add-button">Добавить</button>
@@ -30,63 +37,100 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
     </div>
   `;
 
+  // Вставляем HTML в корневой элемент
   appEl.innerHTML = appHtml;
 
-  
+  // Получаем элементы DOM
   const uploadContainerElement = document.getElementById("upload-image-container");
-  if (uploadContainerElement) {
-    renderUploadImageComponent({
-      element: uploadContainerElement, 
-      onImageUrlChange: (imageUrl) => {
-        console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
-        currentImageUrl = imageUrl;
-      },
-    });
-  } else {
-    console.error("AddPostComponent: Элемент 'upload-image-container' не найден в DOM.");
-  }
-
   const addButton = document.getElementById("add-button");
   const descriptionElement = document.getElementById("post-description");
   const errorElement = document.getElementById("form-error");
 
- 
-  if (addButton && descriptionElement && errorElement) {
-    addButton.addEventListener("click", () => {
-      const description = descriptionElement.value;
-
-     
-      errorElement.textContent = "";
-
-      
-      if (!description.trim()) {
-        errorElement.textContent = "Введите описание поста";
-        return;
-      }
-
-      if (!currentImageUrl) {
-        errorElement.textContent = "Загрузите изображение";
-        return;
-      }
-
-   
-      const token = getToken();
-      if (!token) {
-        errorElement.textContent = "Ошибка авторизации. Пожалуйста, войдите снова.";
-        console.warn("AddPostComponent: Попытка добавить пост без токена.");
-      
-        return;
-      }
-
-      console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description, imageUrl: currentImageUrl });
-
-
-      onAddPostClick({
-        description: description.trim(),
-        imageUrl: currentImageUrl,
-      });
-    });
-  } else {
+  // Проверяем существование всех необходимых элементов
+  if (!uploadContainerElement || !addButton || !descriptionElement || !errorElement) {
     console.error("AddPostComponent: Один или несколько необходимых элементов форм не найдены.");
+    // Можно отобразить общую ошибку, если критично
+    // if (errorElement) {
+    //   errorElement.style.display = 'block';
+    //   errorElement.textContent = "Ошибка инициализации формы.";
+    // }
+    return;
   }
+
+  // --- Логика отображения/скрытия ошибки ---
+  /**
+   * Показать сообщение об ошибке.
+   * @param {string} message - Текст сообщения об ошибке.
+   */
+  const showError = (message) => {
+    errorElement.textContent = message;
+    errorElement.style.display = 'block'; // Делаем элемент видимым
+  };
+
+  /**
+   * Скрыть сообщение об ошибке.
+   */
+  const hideError = () => {
+    errorElement.textContent = "";
+    errorElement.style.display = 'none'; // Скрываем элемент
+  };
+
+  // --- Рендер компонента загрузки изображения ---
+  renderUploadImageComponent({
+    element: uploadContainerElement,
+    // Callback, который вызывается при изменении URL изображения
+    onImageUrl: (imageUrl) => {
+      console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
+      // Обновляем переменную с URL изображения
+      currentImageUrl = imageUrl;
+
+      // Если изображение загружено и ранее была ошибка "Загрузите изображение", скрываем её
+      // Также скрываем ошибку при любой успешной загрузке, если форма была отправлена с этой ошибкой
+      if (currentImageUrl && errorElement.textContent === "Загрузите изображение") {
+         hideError();
+      }
+    },
+  });
+
+  // --- Обработчики событий для полей ввода ---
+  // Добавляем обработчик события input для textarea описания
+  descriptionElement.addEventListener("input", () => {
+    // Если пользователь начал вводить текст и ранее была ошибка "Введите описание поста", скрываем её
+    if (descriptionElement.value.trim() !== "" && errorElement.textContent === "Введите описание поста") {
+      hideError();
+    }
+  });
+
+  // --- Обработчик события для кнопки "Добавить" ---
+  // Добавляем обработчик события click для кнопки "Добавить"
+  addButton.addEventListener("click", () => {
+    // Получаем описание и убираем лишние пробелы
+    const description = descriptionElement.value.trim();
+
+    // --- Проверка валидности формы ---
+    // Сначала скрываем любую предыдущую ошибку
+    hideError();
+
+    // Проверяем обязательные поля
+    if (!description) {
+      showError("Введите описание поста");
+      // Фокус на поле описания для удобства
+      descriptionElement.focus();
+      return;
+    }
+
+    if (!currentImageUrl) {
+      showError("Загрузите изображение");
+      // Фокус на область загрузки изображения (или кнопку) может быть сложнее, пропустим
+      return;
+    }
+
+    // --- Вызов обработчика из index.js ---
+    // Если все проверки пройдены, вызываем переданную функцию обработки клика
+    // Проверка токена и других действий происходит в index.js
+    onAddPostClick({
+      description,
+      imageUrl: currentImageUrl,
+    });
+  });
 }

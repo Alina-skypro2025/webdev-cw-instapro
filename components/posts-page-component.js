@@ -24,7 +24,6 @@ function simpleFormatDate(dateString) {
   }
 }
 
-
 function getMinutesWord(minutes) {
   const lastDigit = minutes % 10;
   const lastTwoDigits = minutes % 100;
@@ -145,7 +144,6 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     goToPage,
   });
 
- 
   document.querySelectorAll(".post-header").forEach(userEl => {
     userEl.addEventListener("click", () => {
       const userId = userEl.dataset.userId;
@@ -157,11 +155,9 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
-  
   document.querySelectorAll('.like-button').forEach(button => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
-      
       
       button.classList.add('liked');
       setTimeout(() => {
@@ -171,9 +167,7 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
       const postId = button.dataset.postId;
       const isLiked = button.dataset.isLiked === 'true';
       
-     
       button.dataset.isLiked = !isLiked;
-      
       
       if (typeof toggleLike === 'function') {
         toggleLike(postId, isLiked);
@@ -181,7 +175,6 @@ export function renderPostsPageComponent({ appEl, posts, user, goToPage, toggleL
     });
   });
 
-  
   const container = document.querySelector('.page-container');
   if (container) {
     container.classList.add('page-transition');
