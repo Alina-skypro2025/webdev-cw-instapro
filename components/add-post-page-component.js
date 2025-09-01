@@ -18,7 +18,7 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
             Описание поста
             <textarea class="form-textarea" id="post-description"></textarea>
           </label>
-          <div class="form-error" id="form-error"></div>
+          <div class="form-error" id="form-error"></div> <!-- Изначально пустой -->
         </div>
         <div class="form-footer">
           <button class="button" id="add-button">Добавить</button>
@@ -29,77 +29,74 @@ export function renderAddPostPageComponent({ appEl, onAddPostClick }) {
 
   appEl.innerHTML = appHtml;
 
-  // Исправлено: Получаем элемент контейнера и передаем его в renderUploadImageComponent
   const uploadContainerElement = document.getElementById("upload-image-container");
-  if (uploadContainerElement) {
-    renderUploadImageComponent({
-      element: uploadContainerElement, // Передаем сам элемент
-      onImageUrlChange: (imageUrl) => {
-        console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
-        currentImageUrl = imageUrl;
-        // Обновляем состояние формы при изменении изображения
-        updateFormValidity();
-      },
-    });
-  } else {
-    console.error("AddPostComponent: Элемент 'upload-image-container' не найден в DOM.");
-  }
-
   const addButton = document.getElementById("add-button");
   const descriptionElement = document.getElementById("post-description");
   const errorElement = document.getElementById("form-error");
 
-  // Исправлено: Добавлена проверка существования элементов перед добавлением обработчиков
-  if (addButton && descriptionElement && errorElement) {
-    // Обновляем состояние формы при изменении описания
-    descriptionElement.addEventListener("input", () => {
-      updateFormValidity();
-    });
-
-    addButton.addEventListener("click", () => {
-      // Проверяем обязательные поля
-      if (!descriptionElement.value.trim()) {
-        errorElement.textContent = "Введите описание поста";
-        return;
-      }
-
-      if (!currentImageUrl) {
-        errorElement.textContent = "Загрузите изображение";
-        return;
-      }
-
-      // Получаем токен (проверка наличия токена уже должна быть в index.js в onAddPostClick)
-      // Но всё равно делаем проверку для дополнительной безопасности на этом уровне
-      const token = getToken();
-      if (!token) {
-        errorElement.textContent = "Ошибка авторизации. Пожалуйста, войдите снова.";
-        console.warn("AddPostComponent: Попытка добавить пост без токена.");
-        // Здесь можно добавить перенаправление на страницу авторизации, если необходимо
-        // Например: import { goToPage, AUTH_PAGE } from "../routes.js"; goToPage(AUTH_PAGE);
-        return;
-      }
-
-      console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description: descriptionElement.value.trim(), imageUrl: currentImageUrl });
-
-      // Вызываем переданную функцию обработки клика
-      onAddPostClick({
-        description: descriptionElement.value.trim(),
-        imageUrl: currentImageUrl,
-      });
-    });
-  } else {
+  // Проверка существования всех необходимых элементов
+  if (!uploadContainerElement || !addButton || !descriptionElement || !errorElement) {
     console.error("AddPostComponent: Один или несколько необходимых элементов форм не найдены.");
+    // Можно отобразить общую ошибку в errorElement, если он существует
+    if (errorElement) {
+      errorElement.textContent = "Ошибка инициализации формы.";
+    }
+    return;
   }
 
-  // Функция для обновления состояния формы
-  function updateFormValidity() {
-    const description = descriptionElement.value.trim();
-    const hasDescription = description.length > 0;
-    const hasImageUrl = currentImageUrl !== "";
+  // Рендер компонента загрузки изображения
+  renderUploadImageComponent({
+    element: uploadContainerElement,
+    onImageUrlChange: (imageUrl) => {
+      console.log("AddPostComponent: URL изображения обновлен:", imageUrl);
+      currentImageUrl = imageUrl;
+      // Скрываем ошибку при успешной загрузке изображения
+      if (errorElement.textContent === "Загрузите изображение") {
+         errorElement.textContent = "";
+      }
+    },
+  });
 
-    // Если все поля заполнены, убираем ошибку
-    if (hasDescription && hasImageUrl) {
+  // Обработчик ввода в поле описания
+  descriptionElement.addEventListener("input", () => {
+    // Скрываем ошибку при вводе текста, если она была о необходимости ввода описания
+    if (errorElement.textContent === "Введите описание поста" && descriptionElement.value.trim() !== "") {
       errorElement.textContent = "";
     }
-  }
+  });
+
+  // Обработчик клика по кнопке "Добавить"
+  addButton.addEventListener("click", () => {
+    const description = descriptionElement.value.trim();
+
+    // Очищаем предыдущие ошибки перед проверкой
+    errorElement.textContent = "";
+
+    // Проверяем обязательные поля
+    if (!description) {
+      errorElement.textContent = "Введите описание поста";
+      return;
+    }
+
+    if (!currentImageUrl) {
+      errorElement.textContent = "Загрузите изображение";
+      return;
+    }
+
+    // Проверка токена авторизации
+    const token = getToken();
+    if (!token) {
+      errorElement.textContent = "Ошибка авторизации. Пожалуйста, войдите снова.";
+      console.warn("AddPostComponent: Попытка добавить пост без токена.");
+      return;
+    }
+
+    console.log("AddPostComponent: Вызов onAddPostClick с данными:", { description, imageUrl: currentImageUrl });
+
+    // Вызываем переданную функцию обработки клика
+    onAddPostClick({
+      description,
+      imageUrl: currentImageUrl,
+    });
+  });
 }
