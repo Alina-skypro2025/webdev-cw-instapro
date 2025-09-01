@@ -119,11 +119,13 @@ export function registerUser({ login, password, name, imageUrl }) {
  * @returns {Promise<Object>} - Данные авторизованного пользователя.
  */
 export function loginUser({ login, password }) {
-  // Для POST с JSON-телом заголовок Content-Type НУЖЕН
+  // ВАЖНО: Для этого конкретного эндпоинта НЕ НУЖНО указывать Content-Type: application/json
+  // Согласно ошибке сервера: "В заголовке передан content-type: application/json, но эта API не умеет работать с этим заголовком, уберите его"
   return fetch(baseHost + "/api/user/login", {
     method: "POST",
+    // Убираем Content-Type: application/json
     headers: {
-      "Content-Type": "application/json",
+      // Никаких заголовков, кроме стандартных для FormData, не нужно
     },
     body: JSON.stringify({
       login,
